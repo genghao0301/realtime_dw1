@@ -36,10 +36,10 @@ public class CdcSqlserverDmp {
         System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        String hostname = parameterTool.get("hostname", "prod01.public.b8f689b2a39a.database.chinacloudapi.cn");
-        Integer port = parameterTool.getInt("port",3342);
-        String username = parameterTool.get("username", "data_admin");
-        String password = parameterTool.get("password", "data_admin_#320AB_");
+        // 初始化配置信息
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // 获取需要同步的数据库以及表名
         String database = parameterTool.get("database", "DMP_DB");
         String[] tableList = new String[]{
                 "dbo.BIZ_HOUSE_INFO"
@@ -67,12 +67,12 @@ public class CdcSqlserverDmp {
         // 1 通过FlinkCDC构建sourceDatabase
         Properties debeziumProperties = PropertiesUtil.getDebeziumProperties();
         SourceFunction<String> sourceFunction = SqlServerSource.<String>builder()
-                .hostname(hostname)
-                .port(port)
+                .hostname(GmallConfig.DMP_SQLSERVER_HOSTNAME)
+                .port(GmallConfig.DMP_SQLSERVER_PORT)
                 .database(database) // monitor sqlserver database
                 .tableList(tableList) // monitor products table
-                .username(username)
-                .password(password)
+                .username(GmallConfig.DMP_SQLSERVER_USERNAME)
+                .password(GmallConfig.DMP_SQLSERVER_PASSWORD)
                 .startupOptions(startupOptions)
                 .deserializer(new MyJsonDebeziumDeserializationSchema()) // converts SourceRecord to JSON String
                 .debeziumProperties(debeziumProperties)
@@ -92,7 +92,7 @@ public class CdcSqlserverDmp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        //env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/user/flink/dmp-kf/checkpoints"));
+        env.setStateBackend(new FsStateBackend(GmallConfig.DMP_STATE_BACKEND));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);
         dataStreamSource.name(Thread.currentThread().getStackTrace()[1].getClassName());
@@ -108,7 +108,7 @@ public class CdcSqlserverDmp {
 
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
                 sinkTopic,
-                new MyKafkaSerializationSchema("ODS"),
+                new MyKafkaSerializationSchema("ods"),
                 outprop,
                 FlinkKafkaProducer.Semantic.EXACTLY_ONCE); // 容错
 

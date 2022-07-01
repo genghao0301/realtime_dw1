@@ -45,7 +45,7 @@ public class MyKafkaSerializationSchema implements KafkaSerializationSchema<Stri
         if (StringUtils.isNotBlank(prefix)) {
             topic = prefix + "_"+jsonObject.getString("table");
         }
-        return new ProducerRecord<>(topic,primaryKey.getBytes(), element.getBytes());
+        return new ProducerRecord<>(topic.toLowerCase(),primaryKey.getBytes(), element.getBytes());
     }
 
 }

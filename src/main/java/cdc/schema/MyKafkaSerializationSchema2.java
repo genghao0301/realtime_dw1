@@ -37,6 +37,6 @@ public class MyKafkaSerializationSchema2 implements KafkaSerializationSchema<Str
         } else {
             primaryKey = primaryKey + "-"+ jsonObject.getJSONObject("after").getString(jsonObject.getString("primaryKey"));
         }
-        return new ProducerRecord<>(topic,primaryKey2.getBytes(), element.getBytes());
+        return new ProducerRecord<>(topic.toLowerCase(),primaryKey2.getBytes(), element.getBytes());
     }
 }

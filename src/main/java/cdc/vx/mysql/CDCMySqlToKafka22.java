@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
@@ -36,10 +37,10 @@ public class CDCMySqlToKafka22 {
         String className = classNames[classNames.length -1];
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        String hostname = parameterTool.get("hostname", "vx-mysql-prod4-slave.mysql.database.chinacloudapi.cn");
-        Integer port = parameterTool.getInt("port",3306);
-        String username = parameterTool.get("username", "repl_finreport@vx-mysql-prod4-slave");
-        String password = parameterTool.get("password", "Vs*xhabt3I");
+        // 初始化配置信息
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // 获取需要同步的数据库以及表名
         String[] databaseList = parameterTool.get("databaseList", "wms_szwt").split(",");
         String[] tableList = new String[]{
                 "wms_szwt.md_warehouse",
@@ -97,11 +98,11 @@ public class CDCMySqlToKafka22 {
         // 1 通过FlinkCDC构建sourceDatabase
         Properties debeziumProperties = PropertiesUtil.getDebeziumProperties();
         MySqlSource<String> sourceDatabase = MySqlSource.<String>builder()
-                .hostname(hostname)
-                .port(port)
+                .hostname(GmallConfig.WMS4_MYSQL_HOSTNAME)
+                .port(GmallConfig.WMS4_MYSQL_PORT)
                 .serverTimeZone("Asia/Shanghai")
-                .username(username)
-                .password(password)
+                .username(GmallConfig.WMS4_MYSQL_USERNAME)
+                .password(GmallConfig.WMS4_MYSQL_PASSWORD)
                 // 需要监控的database
                 .databaseList(databaseList)
                 .tableList(tableList)
@@ -114,11 +115,11 @@ public class CDCMySqlToKafka22 {
                 .build();
         // 1 通过FlinkCDC构建sourceDatabase
         MySqlSource<String> sourceDatabase2 = MySqlSource.<String>builder()
-                .hostname(hostname)
-                .port(port)
+                .hostname(GmallConfig.WMS4_MYSQL_HOSTNAME)
+                .port(GmallConfig.WMS4_MYSQL_PORT)
                 .serverTimeZone("Asia/Shanghai")
-                .username(username)
-                .password(password)
+                .username(GmallConfig.WMS4_MYSQL_USERNAME)
+                .password(GmallConfig.WMS4_MYSQL_PASSWORD)
                 // 需要监控的database
                 .databaseList(databaseList2)
                 .tableList(tableList2)
@@ -145,7 +146,7 @@ public class CDCMySqlToKafka22 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        //env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/user/flink/wms4-kf/checkpoints"));
+        env.setStateBackend(new FsStateBackend(GmallConfig.WM4_STATE_BACKEND));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
                 WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());

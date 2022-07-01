@@ -32,9 +32,9 @@ public class MySQLUtil {
             Class.forName(GmallConfig.MYSQL_DRIVER);
 
             //2.获取连接
-            connection = DriverManager.getConnection(GmallConfig.MYSQL_URL,
-                    GmallConfig.MYSQL_USERNAME,
-                    GmallConfig.MYSQL_PASSWORD
+            connection = DriverManager.getConnection(GmallConfig.WMS4_MYSQL_HOSTNAME,
+                    GmallConfig.WMS4_MYSQL_USERNAME,
+                    GmallConfig.WMS4_MYSQL_PASSWORD
             );
 
             return connection;
@@ -167,9 +167,9 @@ public class MySQLUtil {
                         .build(),
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                         .withDriverName(GmallConfig.MYSQL_DRIVER)
-                        .withUrl(GmallConfig.MYSQL_URL)
-                        .withUsername(GmallConfig.MYSQL_USERNAME)
-                        .withPassword(GmallConfig.MYSQL_PASSWORD)
+                        .withUrl(GmallConfig.WMS4_MYSQL_HOSTNAME)
+                        .withUsername(GmallConfig.WMS4_MYSQL_USERNAME)
+                        .withPassword(GmallConfig.WMS4_MYSQL_PASSWORD)
                         .build());
     }
 

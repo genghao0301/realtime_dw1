@@ -7,6 +7,7 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.vx.app.func.DimSink3;
+import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -34,10 +35,10 @@ public class CDCMySqlToHbase12 {
         System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        String hostname = parameterTool.get("hostname", "vx-mysql-prod4-slave.mysql.database.chinacloudapi.cn");
-        Integer port = parameterTool.getInt("port",3306);
-        String username = parameterTool.get("username", "repl_finreport@vx-mysql-prod4-slave");
-        String password = parameterTool.get("password", "Vs*xhabt3I");
+        // 初始化配置信息
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // 获取需要同步的数据库以及表名
         String[] databaseList = parameterTool.get("databaseList", "wms_szwt").split(",");
         String[] tableList = new String[]{
                 "wms_szwt.md_sku",
@@ -72,11 +73,11 @@ public class CDCMySqlToHbase12 {
         // 1 通过FlinkCDC构建sourceDatabase
         Properties debeziumProperties = PropertiesUtil.getDebeziumProperties();
         MySqlSource<String> sourceDatabase = MySqlSource.<String>builder()
-                .hostname(hostname)
-                .port(port)
+                .hostname(GmallConfig.WMS4_MYSQL_HOSTNAME)
+                .port(GmallConfig.WMS4_MYSQL_PORT)
                 .serverTimeZone("Asia/Shanghai")
-                .username(username)
-                .password(password)
+                .username(GmallConfig.WMS4_MYSQL_USERNAME)
+                .password(GmallConfig.WMS4_MYSQL_PASSWORD)
                 // 需要监控的database
                 .databaseList(databaseList)
                 .tableList(tableList)
@@ -103,7 +104,7 @@ public class CDCMySqlToHbase12 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/user/flink/wms4-hb12/checkpoints"));
+        env.setStateBackend(new FsStateBackend(GmallConfig.WM4_HBASE_STATE_BACKEND));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
                 WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());

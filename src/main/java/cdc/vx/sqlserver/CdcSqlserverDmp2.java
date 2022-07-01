@@ -4,10 +4,12 @@ import cdc.schema.MyJsonDebeziumDeserializationSchema;
 import cdc.vx.utils.PropertiesUtil;
 import com.ververica.cdc.connectors.sqlserver.SqlServerSource;
 import com.ververica.cdc.connectors.sqlserver.table.StartupOptions;
+import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.contrib.streaming.state.RocksDBStateBackend;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -31,10 +33,10 @@ public class CdcSqlserverDmp2 {
         System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        String hostname = parameterTool.get("hostname", "prod01.public.b8f689b2a39a.database.chinacloudapi.cn");
-        Integer port = parameterTool.getInt("port",3342);
-        String username = parameterTool.get("username", "data_admin");
-        String password = parameterTool.get("password", "data_admin_#320AB_");
+        // 初始化配置信息
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // 获取需要同步的数据库以及表名
         String database = parameterTool.get("database", "DMP_DB");
         String[] tableList = new String[]{
                 "dbo.BIZ_HOUSE_INFO"
@@ -62,12 +64,12 @@ public class CdcSqlserverDmp2 {
         // 1 通过FlinkCDC构建sourceDatabase
         Properties debeziumProperties = PropertiesUtil.getDebeziumProperties();
         SourceFunction<String> sourceFunction = SqlServerSource.<String>builder()
-                .hostname(hostname)
-                .port(port)
+                .hostname(GmallConfig.DMP_SQLSERVER_HOSTNAME)
+                .port(GmallConfig.DMP_SQLSERVER_PORT)
                 .database(database) // monitor sqlserver database
                 .tableList(tableList) // monitor products table
-                .username(username)
-                .password(password)
+                .username(GmallConfig.DMP_SQLSERVER_USERNAME)
+                .password(GmallConfig.DMP_SQLSERVER_PASSWORD)
                 .startupOptions(startupOptions)
                 .deserializer(new MyJsonDebeziumDeserializationSchema()) // converts SourceRecord to JSON String
                 .debeziumProperties(debeziumProperties)
@@ -85,7 +87,7 @@ public class CdcSqlserverDmp2 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 2000L));
         //2.5 设置状态后端
-        env.setStateBackend(new RocksDBStateBackend("file:///usr/local/flink-1.13.5/ck"));
+        env.setStateBackend(new FsStateBackend(GmallConfig.DMP_STATE_BACKEND));
         //env.setStateBackend(new MemoryStateBackend());
         // MemoryStateBackend（内存状态后端）
         // FsStateBackend（文件系统状态后端 hdfs）
