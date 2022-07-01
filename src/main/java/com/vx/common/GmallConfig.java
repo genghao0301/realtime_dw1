@@ -81,6 +81,9 @@ public class GmallConfig {
     public static String SINK_MYSQL_URL = "jdbc:mysql://shucang003:50010/test?serverTimezone=GMT%2B8";
     public static String SINK_MYSQL_USERNAME = "root";
     public static String SINK_MYSQL_PASSWORD = "123456";
+
+    //MySQL驱动
+    public static final String SQLSERVER_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
     // SqlServer目标数据库
     public static String SINK_SQLSERVER_URL = "jdbc:mysql://shucang003:50010/test?serverTimezone=GMT%2B8";
     public static String SINK_SQLSERVER_USERNAME = "root";
