@@ -9,6 +9,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.phoenix.exception.PhoenixIOException;
 import org.apache.phoenix.execute.CommitException;
 import org.apache.phoenix.schema.ColumnNotFoundException;
+import org.apache.phoenix.schema.TableNotFoundException;
 
 import java.io.InterruptedIOException;
 import java.sql.Connection;
@@ -34,6 +35,7 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
         try {
             //初始化Phoenix连接
             Class.forName(GmallConfig.PHOENIX_DRIVER);
+            System.out.println("=================================================sink hbase地址："+GmallConfig.PHOENIX_SERVER);
             connection = DriverManager.getConnection(GmallConfig.PHOENIX_SERVER);
             //connection.setSchema(GmallConfig.HBASE_SCHEMA);
         } catch (Exception e) {
@@ -42,7 +44,6 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
     }
 
     //将数据写入Phoenix：upsert into t(id, name, sex) values(..., ..., ...)
-
     @Override
     public void invoke(JSONObject jsonObject, Context context) throws Exception {
 
@@ -84,7 +85,18 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
             //判断如果是更新操作，则删除Redis中的数据保证数据的一致性
             String op = jsonObject.getString("op");
             if ("update".equals(op) || "delete".equals(op))
-                DimUtil.deleteCached(tableName, data.getString(primaryKey));
+                DimUtil.deleteCached(tableName, null);
+        }
+        catch (TableNotFoundException e) {
+            System.out.println("***************************************表不存在，增加表：" + e.getTableName());
+            try {
+                // 增加表字段
+                createTable(jsonObject);
+                // 重新插入数据
+                invoke(jsonObject, context);
+            } catch (Exception e2) {
+                e2.printStackTrace();
+            }
         }
         catch (ColumnNotFoundException e) {
             System.out.println("***************************************表字段不存在，增加表字段：" + e.getColumnName());
@@ -128,6 +140,98 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
                 " values( '" + StringUtils.join(values, "','") + "')";
     }
 
+    //建表语句 : create table if not exists db.tn(id varchar primary key,tm_name varchar) xxx;
+    private void createTable(JSONObject jsonObject) {
+
+        JSONObject data = jsonObject.getJSONObject("data");
+        if (data == null) data = jsonObject.getJSONObject("after");
+        if (data == null) data = jsonObject.getJSONObject("before");
+        //获取数据库名
+        String dbName = jsonObject.getString("db");
+        //获取主键名
+        String sinkPk = jsonObject.getString("primaryKey");
+        // 生成新的主键
+        String primaryKeyVal = dbName + "_" +data.getString(sinkPk);
+        data.put(sinkPk, primaryKeyVal);
+        //获取表名
+        String sinkTable = "dim_" + jsonObject.getString("table");
+        //列名
+        Set<String> sinkColumns = data.keySet();
+        Collection<Object> values = data.values();
+
+        //
+        String sinkExtend = null;
+
+        PreparedStatement preparedStatement = null;
+
+        try {
+            if (sinkPk == null) {
+                sinkPk = "id";
+            }
+            if (sinkExtend == null) {
+                sinkExtend = " SALT_BUCKETS=16, COMPRESSION='GZ' ";
+            }
+
+            StringBuffer createTableSQL = new StringBuffer("create table if not exists ")
+                    .append(GmallConfig.HBASE_SCHEMA)
+                    .append(".")
+                    .append(sinkTable)
+                    .append("(");
+
+            int i = 0;
+            for (String field : sinkColumns) {
+                //判断是否为主键
+                if (sinkPk.equals(field)) {
+                    createTableSQL.append(field).append(" varchar primary key ");
+                } else {
+                    createTableSQL.append(field).append(" varchar ");
+                }
+
+                //判断是否为最后一个字段,如果不是,则添加","
+                if (i < sinkColumns.size() - 1) {
+                    createTableSQL.append(",");
+                }
+                i++;
+            }
+
+//            String[] fields = sinkColumns.split(",");
+//            for (int i = 0; i < fields.length; i++) {
+//                String field = fields[i];
+//                //判断是否为主键
+//                if (sinkPk.equals(field)) {
+//                    createTableSQL.append(field).append(" varchar primary key ");
+//                } else {
+//                    createTableSQL.append(field).append(" varchar ");
+//                }
+//                //判断是否为最后一个字段,如果不是,则添加","
+//                if (i < fields.length - 1) {
+//                    createTableSQL.append(",");
+//                }
+//            }
+
+            createTableSQL.append(")").append(sinkExtend);
+
+            //打印建表语句
+            System.out.println(createTableSQL);
+
+            //预编译SQL
+            preparedStatement = connection.prepareStatement(createTableSQL.toString());
+
+            //执行
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Phoenix表" + sinkTable + "建表失败！");
+        } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     //建表语句 : create table if not exists db.tn(id varchar primary key,tm_name varchar) xxx;
     private void checkTable(String sinkTable, Set<String> sinkColumns, String sinkPk, String sinkExtend) {
 
