@@ -99,7 +99,7 @@ public class CdcSqlserverDmp {
         //2.3 设置任务关闭的时候保留最后一次CK数据
         env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
         //2.4 指定从CK自动重启策略
-        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
+        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(1, 30000L));
         //2.5 设置状态后端
         env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
 
