@@ -69,8 +69,7 @@ public class PostgresCDC {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 20000L));
         //2.5 设置状态后端
-        //env.setStateBackend(new FsStateBackend("hdfs://shucang002:8020/flink/fs/checkpoints"));
-        //env.setStateBackend(new RocksDBStateBackend("hdfs://shucang002:8020/flink/cdc/checkpoints"));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"pg-kafka-test")));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction,
                         "postgres-source")

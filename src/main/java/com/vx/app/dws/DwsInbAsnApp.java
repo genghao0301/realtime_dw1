@@ -53,7 +53,7 @@ public class DwsInbAsnApp {
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
         if (isSavePoint)
-            env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/user/flink/dws-inb/checkpoints"));
+            env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dws-inb")));
 
         // kafka消费者
         FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource("dwd_inv_transaction",Thread.currentThread().getStackTrace()[1].getClassName());

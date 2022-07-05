@@ -9,13 +9,14 @@ import java.util.Date;
  * 商品品类表
  * @TableName SKU_CLASS
  */
-//@TableName(value ="SKU_CLASS")
+@TableName(value ="SKU_CLASS")
 @Data
-public class SkuClass implements Serializable {
+public class SkuClass extends BaseBean implements Serializable {
     /**
      * 自增id
      */
     //@TableId(value = "ID", type = IdType.AUTO)
+    @TransientSink
     private Long ID;
 
     /**

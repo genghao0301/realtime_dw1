@@ -9,7 +9,7 @@ import java.util.Date;
  * 库存交易表
  * @TableName inv_transaction
  */
-//@TableName(value ="inv_transaction")
+@TableName(value ="inv_transaction")
 @Data
 public class DwdInvTransaction extends InvTransaction {
 

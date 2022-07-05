@@ -10,7 +10,7 @@ import java.util.Date;
  * 
  * @TableName WH_MONTH_INVENTORY
  */
-//@TableName(value ="WH_MONTH_INVENTORY")
+@TableName(value ="WH_MONTH_INVENTORY")
 @Data
 public class WhMonthInventory implements Serializable {
     /**

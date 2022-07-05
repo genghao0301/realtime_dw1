@@ -9,7 +9,7 @@ import java.util.Date;
  * 
  * @TableName ads_inv_transaction
  */
-//@TableName(value ="ads_inv_transaction")
+@TableName(value ="ads_inv_transaction")
 @Data
 public class AdsInvTransaction extends BaseBean implements Serializable {
     /**

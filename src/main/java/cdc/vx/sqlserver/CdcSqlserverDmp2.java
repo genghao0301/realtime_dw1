@@ -87,12 +87,10 @@ public class CdcSqlserverDmp2 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 2000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(GmallConfig.DMP_STATE_BACKEND));
-        //env.setStateBackend(new MemoryStateBackend());
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
         // MemoryStateBackend（内存状态后端）
         // FsStateBackend（文件系统状态后端 hdfs）
         // RocksDBStateBackend（RocksDB状态后端）
-        //env.setStateBackend(new FsStateBackend("hdfs://sc2:8020/flinkCDC"));
         //2.6 设置访问HDFS的用户名
         //System.setProperty("HADOOP_USER_NAME", "root");
 

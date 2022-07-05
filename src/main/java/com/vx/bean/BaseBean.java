@@ -15,21 +15,25 @@ public class BaseBean {
     /**
      * 数据库
      */
+    @TransientSink
     private String db;
 
     /**
      * 表名
      */
+    @TransientSink
     private String table;
 
     /**
      * 表名
      */
+    @TransientSink
     private String primaryKey;
 
     /**
      * 操作
      */
+    @TransientSink
     private String op;
 
 }

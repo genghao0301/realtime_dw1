@@ -146,7 +146,7 @@ public class CDCMySqlToKafka22 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(GmallConfig.WM4_STATE_BACKEND));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-kafka")));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
                 WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());

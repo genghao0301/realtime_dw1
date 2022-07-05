@@ -2,9 +2,13 @@ package cdc.vx.sqlserver;
 
 import cdc.schema.MyJsonDebeziumDeserializationSchema;
 import cdc.schema.MyKafkaSerializationSchema;
+import cdc.vx.utils.CdcConstant;
 import cdc.vx.utils.PropertiesUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.sqlserver.table.StartupOptions;
+import com.vx.app.func.DimSink2;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -12,12 +16,17 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import com.ververica.cdc.connectors.sqlserver.SqlServerSource;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Properties;
@@ -92,7 +101,7 @@ public class CdcSqlserverDmp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(GmallConfig.DMP_STATE_BACKEND));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);
         dataStreamSource.name(Thread.currentThread().getStackTrace()[1].getClassName());
@@ -100,20 +109,41 @@ public class CdcSqlserverDmp {
         // 3 打印数据
         String isPrint = parameterTool.get("isPrint", "n");
         if ("y".equals(isPrint.toLowerCase())) dataStreamSource.print();
+        // 数据分流
+        // 创建分流标记
+        OutputTag<String> kafkaTag = new OutputTag<String>("kafka-tag"){};
+        OutputTag<String> hbaseTag = new OutputTag<String>("hbase-tag"){};
+        // 分流处理
+        SingleOutputStreamOperator<String> processStream = dataStreamSource.process(new ProcessFunction<String, String>() {
+            @Override
+            public void processElement(String value, ProcessFunction<String, String>.Context ctx, Collector<String> out) throws Exception {
+                JSONObject jsonObject = JSON.parseObject(value);
+                String table = jsonObject.getString("table");
+                if (CdcConstant.DMP_DIM_TABLES.contains(jsonObject.getString("table"))) {
+                    ctx.output(hbaseTag, value);
+                } else {
+                    ctx.output(kafkaTag, value);
+                }
+            }
+        });
+        // 输出
+        DataStream<String> kafkaStream = processStream.getSideOutput(kafkaTag);
+        DataStream<String> hbaseStream = processStream.getSideOutput(hbaseTag);
 
+        // 输出到kafka
         String sinkTopic = "ods_default";
         Properties outprop= new Properties();
         outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
         outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
-
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
                 sinkTopic,
                 new MyKafkaSerializationSchema("ods"),
                 outprop,
                 FlinkKafkaProducer.Semantic.EXACTLY_ONCE); // 容错
+        dataStreamSource.addSink(myProducer).name("Dmp_Sink_Kafka");
 
-        dataStreamSource.addSink(myProducer).name("SqlServerToKafka21_Sink");
-
+        // 输出到hbase
+        hbaseStream.map(JSONObject::parseObject).addSink(new DimSink2()).name("Dmp_Sink_Hbase");
         // 4 启动任务
         env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
 

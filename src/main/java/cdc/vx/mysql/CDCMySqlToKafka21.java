@@ -2,6 +2,7 @@ package cdc.vx.mysql;
 
 import cdc.schema.MyJsonDebeziumDeserializationSchema;
 import cdc.schema.MyKafkaSerializationSchema;
+import cdc.vx.utils.CdcConstant;
 import cdc.vx.utils.PropertiesUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -117,7 +118,7 @@ public class CDCMySqlToKafka21 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(GmallConfig.WM4_STATE_BACKEND));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-kafka")));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase, WatermarkStrategy.noWatermarks(), sourceName);
         dataStreamSource.name(sourceName);
@@ -134,7 +135,7 @@ public class CDCMySqlToKafka21 {
             @Override
             public void processElement(String value, ProcessFunction<String, String>.Context ctx, Collector<String> out) throws Exception {
                 JSONObject jsonObject = JSON.parseObject(value);
-                if (jsonObject.getString("table").startsWith("md_")) {
+                if (CdcConstant.WMS_DIM_TABLES.contains(jsonObject.getString("table"))) {
                     ctx.output(hbaseTag, value);
                 } else {
                     ctx.output(kafkaTag, value);
@@ -158,7 +159,7 @@ public class CDCMySqlToKafka21 {
         kafkaStream.addSink(myProducer).name("Kafka_Sink_kafka");
         hbaseStream.addSink(myProducer).name("Hbase_Sink_kafka");
         // 输出到hbase
-        hbaseStream.map(JSONObject::parseObject).addSink(new DimSink2()).name("Sink_Hbase").setParallelism(1);
+        hbaseStream.map(JSONObject::parseObject).addSink(new DimSink2()).name("Wms_Sink_Hbase");
         // 4 启动任务
         env.execute();
 

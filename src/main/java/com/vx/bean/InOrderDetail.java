@@ -10,7 +10,7 @@ import java.util.Date;
  * 入库详情表
  * @TableName IN_ORDER_DETAIL
  */
-//@TableName(value ="IN_ORDER_DETAIL")
+@TableName(value ="IN_ORDER_DETAIL")
 @Data
 public class InOrderDetail implements Serializable {
     /**

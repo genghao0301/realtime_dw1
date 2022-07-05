@@ -39,6 +39,8 @@ public class GmallConfig {
     //ClickHouse连接地址
     public static String CLICKHOUSE_URL = "jdbc:clickhouse://shucang001:8123/default";
 
+    // 状态后端
+    public static String FS_STATE_BACKEND = null;
     //MySQL驱动
     public static final String MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";
     //wms 需要同步的表
@@ -110,6 +112,9 @@ public class GmallConfig {
         KAFKA_SERVER = properties.getProperty("kafka.servers");
         // hbase连接信息
         PHOENIX_SERVER = properties.getProperty("phoenix.server");
+
+        // 状态后端
+        FS_STATE_BACKEND = properties.getProperty("fs.state.backend");
         //WMS2 MySQL 源数据库连接信息
         WMS_CDC_TABLES = properties.getProperty("wms.cdc.tables");
         //WMS2 MySQL 源数据库连接信息

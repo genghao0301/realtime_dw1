@@ -9,7 +9,7 @@ import java.util.Date;
  * 园区库房信息表
  * @TableName WH_STOCK_KEY_INFO
  */
-//@TableName(value ="WH_STOCK_KEY_INFO")
+@TableName(value ="WH_STOCK_KEY_INFO")
 @Data
 public class WhStockKeyInfo implements Serializable {
     /**

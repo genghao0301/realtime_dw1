@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  * 库存交易表
  * @TableName inv_transaction
  */
-//@TableName(value ="inv_transaction")
+@TableName(value ="inv_transaction")
 @Data
 public class InvTransaction extends BaseBean implements Serializable {
 

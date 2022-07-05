@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.vx.bean.OrderWide;
 import com.vx.bean.PaymentWide;
 import com.vx.bean.ProductStats;
+import com.vx.common.GmallConfig;
 import com.vx.common.GmallConstant;
 import com.vx.utils.DateTimeUtil;
 import com.vx.utils.MyKafkaUtil;
@@ -48,7 +49,7 @@ public class ProductStatsApp {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(1);
         //1.1 设置状态后端
-        env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/gmall/dwd_log/ck"));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dwd-log")));
         //1.2 开启CK
         env.enableCheckpointing(10000L, CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setCheckpointTimeout(60000L);

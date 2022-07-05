@@ -3,7 +3,9 @@ package cdc.vx.postgres;
 import cdc.schema.MyKafkaSerializationSchema;
 import com.ververica.cdc.connectors.postgres.PostgreSQLSource;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
+import com.vx.common.GmallConfig;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
@@ -69,8 +71,7 @@ public class PostgresCDC {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 20000L));
         //2.5 设置状态后端
-        //env.setStateBackend(new FsStateBackend("hdfs://shucang002:8020/flink/fs/checkpoints"));
-        //env.setStateBackend(new RocksDBStateBackend("hdfs://shucang002:8020/flink/cdc/checkpoints"));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"pg-kafka")));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction,
                         "postgres-source")

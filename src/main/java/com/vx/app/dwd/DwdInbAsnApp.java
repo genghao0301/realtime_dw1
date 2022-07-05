@@ -67,7 +67,7 @@ public class DwdInbAsnApp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend("hdfs://shucang001:8020/user/flink/dwd-inb/checkpoints"));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dwd-inb")));
 
         // kafka消费者
         FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,"ods_inv_transaction",Thread.currentThread().getStackTrace()[1].getClassName());
