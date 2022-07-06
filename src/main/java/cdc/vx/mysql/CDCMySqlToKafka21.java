@@ -49,11 +49,6 @@ public class CDCMySqlToKafka21 {
         // ***************************初始化配置信息***************************
         String config_env = parameterTool.get("env", "dev");
         GmallConfig.getSingleton().init(config_env);
-        System.out.println("=================================================wms数据库地址："+GmallConfig.WMS4_MYSQL_HOSTNAME);
-        System.out.println("=================================================wms同步表："+GmallConfig.WMS_CDC_TABLES);
-        System.out.println("=================================================hbase地址："+GmallConfig.PHOENIX_SERVER);
-
-        Thread.sleep(1000);
         // ***************************初始化配置信息***************************
         // 获取需要同步的数据库以及表名
         String[] databaseList = parameterTool.get("databaseList", "wms_szwt").split(",");
