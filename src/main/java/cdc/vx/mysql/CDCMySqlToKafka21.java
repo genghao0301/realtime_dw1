@@ -8,7 +8,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
-import com.vx.app.func.DimSink2;
+import com.vx.app.func.DimHbaseSink;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -159,7 +159,7 @@ public class CDCMySqlToKafka21 {
         kafkaStream.addSink(myProducer).name("Kafka_Sink_kafka");
         hbaseStream.addSink(myProducer).name("Hbase_Sink_kafka");
         // 输出到hbase
-        hbaseStream.map(JSONObject::parseObject).addSink(new DimSink2()).name("Wms_Sink_Hbase");
+        hbaseStream.map(JSONObject::parseObject).addSink(new DimHbaseSink(config_env)).name("Wms_Sink_Hbase");
         // 4 启动任务
         env.execute();
 

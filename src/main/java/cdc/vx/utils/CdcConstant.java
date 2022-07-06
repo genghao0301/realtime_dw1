@@ -12,11 +12,13 @@ import java.util.List;
  */
 public class CdcConstant {
 
+    //DMP源数据库维度表
     public static List<String> DMP_DIM_TABLES = Arrays.asList(
              "WAREHOUSE_CODE_MAPPING"
             ,""
     );
 
+    //WMS源数据库维度表
     public static List<String> WMS_DIM_TABLES = Arrays.asList(
              "md_sku"
             ,"md_client"

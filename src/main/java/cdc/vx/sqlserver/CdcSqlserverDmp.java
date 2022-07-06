@@ -6,12 +6,10 @@ import cdc.vx.utils.CdcConstant;
 import cdc.vx.utils.PropertiesUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.sqlserver.table.StartupOptions;
-import com.vx.app.func.DimSink2;
+import com.vx.app.func.DimHbaseSink;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
@@ -42,6 +40,8 @@ public class CdcSqlserverDmp {
 
     public static void main(String[] args) throws Exception {
 
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
+        String sourceName = classNames[classNames.length -1];
         System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
@@ -104,7 +104,7 @@ public class CdcSqlserverDmp {
         env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);
-        dataStreamSource.name(Thread.currentThread().getStackTrace()[1].getClassName());
+        dataStreamSource.name(sourceName);
 
         // 3 打印数据
         String isPrint = parameterTool.get("isPrint", "n");
@@ -139,13 +139,14 @@ public class CdcSqlserverDmp {
                 sinkTopic,
                 new MyKafkaSerializationSchema("ods"),
                 outprop,
-                FlinkKafkaProducer.Semantic.EXACTLY_ONCE); // 容错
-        dataStreamSource.addSink(myProducer).name("Dmp_Sink_Kafka");
+                FlinkKafkaProducer.Semantic.AT_LEAST_ONCE); // 容错
+        kafkaStream.addSink(myProducer).name("Dmp_Sink_Kafka");
+        hbaseStream.addSink(myProducer).name("Dmp_Sink_Kafka2");
 
         // 输出到hbase
-        hbaseStream.map(JSONObject::parseObject).addSink(new DimSink2()).name("Dmp_Sink_Hbase");
+        hbaseStream.map(JSONObject::parseObject).addSink(new DimHbaseSink(config_env)).name("Dmp_Sink_Hbase");
         // 4 启动任务
-        env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
+        env.execute(sourceName+"Execute");
 
     }
 

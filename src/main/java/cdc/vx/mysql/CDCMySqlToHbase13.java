@@ -5,7 +5,7 @@ import cdc.vx.utils.PropertiesUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
-import com.vx.app.func.DimSink2;
+import com.vx.app.func.DimHbaseSink;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -116,7 +116,7 @@ public class CDCMySqlToHbase13 {
                         System.out.println(x);
                     return x;
                 }).map(JSONObject::parseObject)
-                .addSink(new DimSink2()).name("MySqlToHbase11_Sink")
+                .addSink(new DimHbaseSink(config_env)).name("MySqlToHbase11_Sink")
         ;
 
         // 4 启动任务

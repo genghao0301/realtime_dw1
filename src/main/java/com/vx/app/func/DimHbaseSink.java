@@ -11,12 +11,12 @@ import org.apache.phoenix.execute.CommitException;
 import org.apache.phoenix.schema.ColumnNotFoundException;
 import org.apache.phoenix.schema.TableNotFoundException;
 
-import java.io.InterruptedIOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -26,15 +26,22 @@ import java.util.Set;
  * @Author: xiehp
  * @Date: 2022/4/24 18:28
  */
-public class DimSink2 extends RichSinkFunction<JSONObject> {
+public class DimHbaseSink extends RichSinkFunction<JSONObject> {
 
     private Connection connection = null;
+    private String env;
+
+    public DimHbaseSink(String env) {
+        this.env = env;
+    }
 
     @Override
     public void open(Configuration parameters) throws Exception {
         try {
             //初始化Phoenix连接
             Class.forName(GmallConfig.PHOENIX_DRIVER);
+            if (StringUtils.isBlank(GmallConfig.PHOENIX_SERVER))
+                GmallConfig.getSingleton().init(env);
             System.out.println("=================================================sink hbase地址："+GmallConfig.PHOENIX_SERVER);
             connection = DriverManager.getConnection(GmallConfig.PHOENIX_SERVER);
             //connection.setSchema(GmallConfig.HBASE_SCHEMA);
@@ -51,7 +58,7 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
         try {
             if (!jsonObject.containsKey("invokeNum")) jsonObject.put("invokeNum" , 0);
             int invokeNum = jsonObject.getInteger("invokeNum");
-            if (invokeNum > 3) return;
+            if (invokeNum > 10) return;
             jsonObject.put("invokeNum" , ++invokeNum);
             //获取数据中的Key以及Value
             JSONObject data = jsonObject.getJSONObject("data");
@@ -93,6 +100,7 @@ public class DimSink2 extends RichSinkFunction<JSONObject> {
                 // 增加表字段
                 createTable(jsonObject);
                 // 重新插入数据
+                Thread.sleep(1000 * new Random(5).nextInt());
                 invoke(jsonObject, context);
             } catch (Exception e2) {
                 e2.printStackTrace();

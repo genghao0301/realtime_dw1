@@ -32,7 +32,7 @@ public class GmallConfig {
     //Phoenix驱动
     public static String PHOENIX_DRIVER = "org.apache.phoenix.jdbc.PhoenixDriver";
     //Phoenix连接参数
-    public static String PHOENIX_SERVER = "jdbc:phoenix:shucang001,shucang002,shucang003:2181:/hbase";
+    public static String PHOENIX_SERVER = null;
 
     //ClickHouse驱动
     public static String CLICKHOUSE_DRIVER = "ru.yandex.clickhouse.ClickHouseDriver";
