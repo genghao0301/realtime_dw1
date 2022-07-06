@@ -3,9 +3,14 @@ package cdc.vx.mysql;
 import cdc.schema.MyJsonDebeziumDeserializationSchema;
 import cdc.schema.MyKafkaSerializationSchema;
 import cdc.schema.MySqlCustomerDeserialization;
+import cdc.vx.utils.CdcConstant;
 import cdc.vx.utils.PropertiesUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
+import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
+import com.vx.app.func.DimHbaseSink;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -13,11 +18,16 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer.Semantic;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Properties;
@@ -34,47 +44,20 @@ public class CDCMySqlToKafka22 {
     public static void main(String[] args) throws Exception {
 
         String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
-        String className = classNames[classNames.length -1];
+        String sourceName = classNames[classNames.length -1];
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        // 初始化配置信息
+        // ***************************初始化配置信息***************************
         String config_env = parameterTool.get("env", "dev");
         GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
         // 获取需要同步的数据库以及表名
         String[] databaseList = parameterTool.get("databaseList", "wms_szwt").split(",");
-        String[] tableList = new String[]{
-                "wms_szwt.md_warehouse",
-                "wms_szwt.md_sku",
-                "wms_szwt.md_client",
-                "wms_szwt.md_package_detail",
-                "wms_szwt.md_location",
-                "wms_szwt.md_code_dict",
-                "wms_szwt.inv_transaction",
-                "wms_szwt.inv_location_inventory",
-                "wms_szwt.inv_inventory_daily_report",
-                "wms_szwt.inb_asn_header",
-                "wms_szwt.inb_asn_detail",
-                "wms_szwt.oub_order_header",
-                "wms_szwt.oub_order_detail"
-        };
-        String[] databaseList2 = parameterTool.get("databaseList", "wms_shhg").split(",");
-        String[] tableList2 = new String[]{
-                "wms_shhg.md_warehouse",
-                "wms_shhg.md_sku",
-                "wms_shhg.md_client",
-                "wms_shhg.md_package_detail",
-                "wms_shhg.md_location",
-                "wms_shhg.md_code_dict",
-                "wms_shhg.inv_transaction",
-                "wms_shhg.inv_location_inventory",
-                "wms_shhg.inv_inventory_daily_report",
-                "wms_shhg.inb_asn_header",
-                "wms_shhg.inb_asn_detail",
-                "wms_shhg.oub_order_header",
-                "wms_shhg.oub_order_detail"
-        };
+        String[] tableList = new String[]{};
         if (StringUtils.isNotBlank(parameterTool.get("tableList")))
             tableList = parameterTool.get("tableList").split(",");
+        else
+            tableList = GmallConfig.WMS_CDC_TABLES.split(",");
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
         StartupOptions startupOptions = StartupOptions.initial();
@@ -103,26 +86,11 @@ public class CDCMySqlToKafka22 {
                 .serverTimeZone("Asia/Shanghai")
                 .username(GmallConfig.WMS4_MYSQL_USERNAME)
                 .password(GmallConfig.WMS4_MYSQL_PASSWORD)
+                // 动态添加新表支持
+                .scanNewlyAddedTableEnabled(true)
                 // 需要监控的database
                 .databaseList(databaseList)
                 .tableList(tableList)
-                .serverId("1700-1799")
-                // 反序列化
-                .deserializer(new MySqlCustomerDeserialization())
-                //.includeSchemaChanges(true)
-                .startupOptions(startupOptions)
-                .debeziumProperties(debeziumProperties)
-                .build();
-        // 1 通过FlinkCDC构建sourceDatabase
-        MySqlSource<String> sourceDatabase2 = MySqlSource.<String>builder()
-                .hostname(GmallConfig.WMS4_MYSQL_HOSTNAME)
-                .port(GmallConfig.WMS4_MYSQL_PORT)
-                .serverTimeZone("Asia/Shanghai")
-                .username(GmallConfig.WMS4_MYSQL_USERNAME)
-                .password(GmallConfig.WMS4_MYSQL_PASSWORD)
-                // 需要监控的database
-                .databaseList(databaseList2)
-                .tableList(tableList2)
                 .serverId("1800-1899")
                 // 反序列化
                 .deserializer(new MyJsonDebeziumDeserializationSchema())
@@ -148,35 +116,46 @@ public class CDCMySqlToKafka22 {
         //2.5 设置状态后端
         env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-kafka")));
 
-        DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
-                WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());
+        DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase, WatermarkStrategy.noWatermarks(), sourceName);
+        dataStreamSource.name(sourceName);
 
-        DataStreamSource<String> dataStreamSource2 = env.fromSource(sourceDatabase2,
-                WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());
         // 3 打印数据
         String isPrint = parameterTool.get("isPrint", "n");
-        if ("y".equals(isPrint.toLowerCase())) dataStreamSource2.print();
-
-        String sinkTopic = "ods_default";
-        Properties outprop= new Properties();
-        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
-        outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
-
-
-        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
-                sinkTopic,
-                new MyKafkaSerializationSchema("ods2"),
-                outprop,
-                Semantic.AT_LEAST_ONCE); // 容错
-        FlinkKafkaProducer<String> myProducer2 = new FlinkKafkaProducer<String>(
-                sinkTopic,
-                new MyKafkaSerializationSchema("ods3"),
-                outprop,
-                Semantic.AT_LEAST_ONCE); // 容错
-
-        dataStreamSource.addSink(myProducer).name("MySqlToKafka21_Sink");
-        dataStreamSource2.addSink(myProducer2).name("MySqlToKafka22_Sink");
-
+        if ("y".equals(isPrint.toLowerCase())) dataStreamSource.print();
+        // 数据分流
+        // 创建分流标记
+//        OutputTag<String> kafkaTag = new OutputTag<String>("kafka-tag"){};
+//        OutputTag<String> hbaseTag = new OutputTag<String>("hbase-tag"){};
+//        //分流处理
+//        SingleOutputStreamOperator<String> processStream = dataStreamSource.process(new ProcessFunction<String, String>() {
+//            @Override
+//            public void processElement(String value, ProcessFunction<String, String>.Context ctx, Collector<String> out) throws Exception {
+//                JSONObject jsonObject = JSON.parseObject(value);
+//                if (CdcConstant.WMS_DIM_TABLES.contains(jsonObject.getString("table"))) {
+//                    ctx.output(hbaseTag, value);
+//                } else {
+//                    ctx.output(kafkaTag, value);
+//                }
+//            }
+//        });
+//        // 输出
+//        DataStream<String> kafkaStream = processStream.getSideOutput(kafkaTag);
+//        DataStream<String> hbaseStream = processStream.getSideOutput(hbaseTag);
+//
+//        // 输出到kafka
+//        String sinkTopic = "ods_default";
+//        Properties outprop= new Properties();
+//        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
+//        outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
+//        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
+//                sinkTopic,
+//                new MyKafkaSerializationSchema("ods"),
+//                outprop,
+//                Semantic.AT_LEAST_ONCE); // 容错
+//        kafkaStream.addSink(myProducer).name("Kafka_Sink_kafka");
+//        hbaseStream.addSink(myProducer).name("Hbase_Sink_kafka");
+//        // 输出到hbase
+//        hbaseStream.map(JSONObject::parseObject).addSink(new DimHbaseSink(config_env)).name("Wms_Sink_Hbase");
         // 4 启动任务
         env.execute();
 

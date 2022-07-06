@@ -1,6 +1,7 @@
 package cdc.schema;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import com.vx.utils.DateTimeUtil;
 import io.debezium.data.Envelope;
@@ -61,46 +62,44 @@ public class MyJsonDebeziumDeserializationSchema implements DebeziumDeserializat
                 if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.MicroTimestamp".equals(field.schema().name())) {
                     if (beforeValue != null) {
                         long times = (long) beforeValue / 1000;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 }
                 else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.NanoTimestamp".equals(field.schema().name())) {
                     if (beforeValue != null) {
                         long times = (long) beforeValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 }  else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.Timestamp".equals(field.schema().name())) {
                     if (beforeValue != null) {
                         long times = (long) beforeValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 } else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.ZonedTimestamp".equals(field.schema().name())) {
                     if (beforeValue != null) {
                         long times = (long) beforeValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 }
                 else if ("string".equals(field.schema().type().getName()) && "io.debezium.time.ZonedTimestamp".equals(field.schema().name())) {
                     if (beforeValue != null) {
                         long times = DateTimeUtil.utcToTs(String.valueOf(beforeValue));
-                        String dateTime = sdf.format(new Date((times + 8 * 60 * 60 * 1000)));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf.format(new Date((times + 8 * 60 * 60 * 1000)));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 }
                 else if("int32".equals(field.schema().type().getName()) && "io.debezium.time.Date".equals(field.schema().name())){
                     if(beforeValue != null) {
                         int times = (int) beforeValue;
-                        String dateTime = sdf1.format(new Date(times * 24 * 60 * 60L * 1000));
-                        beforeJson.put(field.name(), dateTime);
+                        beforeValue = sdf1.format(new Date(times * 24 * 60 * 60L * 1000));
+                        //beforeJson.put(field.name(), dateTime);
                     }
                 }
-                else {
-                    beforeJson.put(field.name(), beforeValue);
-                }
+                beforeJson.put(field.name(), beforeValue);
             }
         }
         // 获取after数据
@@ -114,57 +113,55 @@ public class MyJsonDebeziumDeserializationSchema implements DebeziumDeserializat
                 if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.MicroTimestamp".equals(field.schema().name())) {
                     if (afterValue != null) {
                         long times = (long) afterValue / 1000;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }
                 else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.NanoTimestamp".equals(field.schema().name())) {
                     if (afterValue != null) {
                         long times = (long) afterValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }  else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.Timestamp".equals(field.schema().name())) {
                     if (afterValue != null) {
                         long times = (long) afterValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }
                 else if ("int64".equals(field.schema().type().getName()) && "io.debezium.time.ZonedTimestamp".equals(field.schema().name())) {
                     if (afterValue != null) {
                         long times = (long) afterValue;
-                        String dateTime = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf.format(new Date((times - 8 * 60 * 60 * 1000)));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }
                 else if ("string".equals(field.schema().type().getName()) && "io.debezium.time.ZonedTimestamp".equals(field.schema().name())) {
                     if (afterValue != null) {
                         long times = DateTimeUtil.utcToTs(String.valueOf(afterValue));
-                        String dateTime = sdf.format(new Date((times + 8 * 60 * 60 * 1000)));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf.format(new Date((times + 8 * 60 * 60 * 1000)));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }
                 else if("int32".equals(field.schema().type().getName()) && "io.debezium.time.Date".equals(field.schema().name())){
                     if(afterValue != null) {
                         int times = (int) afterValue;
-                        String dateTime = sdf1.format(new Date(times * 24 * 60 * 60L * 1000));
-                        afterJson.put(field.name(), dateTime);
+                        afterValue = sdf1.format(new Date(times * 24 * 60 * 60L * 1000));
+                        //afterJson.put(field.name(), dateTime);
                     }
                 }
-                else {
-                    afterJson.put(field.name(), afterValue);
-                }
+                //if (afterValue == null) afterValue = "";
+                afterJson.put(field.name(), afterValue);
             }
         }
-
 
         result.put("op", operation.toString().toLowerCase());
         result.put("before", beforeJson);
         result.put("after", afterJson);
         result.put("primaryKey", primaryKey);
         // 发送数据至下游
-        collector.collect(result.toJSONString());
+        collector.collect(result.toString(SerializerFeature.WriteMapNullValue));
     }
 
     @Override
