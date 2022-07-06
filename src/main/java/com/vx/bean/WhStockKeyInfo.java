@@ -16,6 +16,7 @@ public class WhStockKeyInfo implements Serializable {
      * 自增id
      */
     //@TableId(value = "ID", type = IdType.AUTO)
+    @TransientSink
     private Long ID;
 
     /**

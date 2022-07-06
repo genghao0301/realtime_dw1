@@ -24,8 +24,9 @@ public abstract class DimAsyncFunction2<T> extends RichAsyncFunction<T, T> imple
 
     //声明线程池对象
     private ThreadPoolExecutor threadPoolExecutor;
-    //声明属性
+    //声明属性 表名
     private String tableName;
+    //声明属性 字段名
     private String columnNames;
 
     public DimAsyncFunction2(String tableName) {

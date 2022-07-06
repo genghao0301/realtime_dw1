@@ -10,7 +10,6 @@ public class RedisUtil {
 
     public static Jedis getJedis() {
 
-
         if (jedisPool == null) {
             synchronized (RedisUtil.class) {
                 if (jedisPool == null ) {
@@ -24,20 +23,9 @@ public class RedisUtil {
 
                     jedisPool = new JedisPool(jedisPoolConfig, "shucang001", 6379, 1000);
                     System.out.println("=====================================开辟连接池");
-                    return jedisPool.getResource();
                 }
             }
-        } else {
-            try {
-                System.out.println("=====================================连接池:" + jedisPool.getNumActive());
-                return jedisPool.getResource();
-            } catch (Exception e) {
-                e.printStackTrace();
-                jedisPool = null;
-                getJedis();
-            }
-
         }
-        return null;
+        return jedisPool.getResource();
     }
 }

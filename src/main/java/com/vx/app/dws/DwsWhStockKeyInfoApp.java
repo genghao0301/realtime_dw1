@@ -1,18 +1,15 @@
-package com.vx.app.dwd;
+package com.vx.app.dws;
 
-import cdc.vx.bean.DimMdPackageDetail;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.vx.app.func.DimAsyncFunction2;
-import com.vx.app.schema.DwdKafkaSerializationSchema;
-import com.vx.bean.DwdInvTransaction;
 import com.vx.bean.SkuClass;
+import com.vx.bean.WhStockKeyInfo;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
 import com.vx.utils.DbEnum;
 import com.vx.utils.MyKafkaUtil;
 import com.vx.utils.SqlServerUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -24,16 +21,10 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.util.CollectionUtil;
-import org.apache.kafka.clients.producer.ProducerConfig;
 
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * @Author: xiehp
  * @Date: 2022/5/24 16:18
  */
-public class DwdMdCodeDictApp {
+public class DwsWhStockKeyInfoApp {
 
     public static void main(String[] args) throws Exception {
 
@@ -77,26 +68,18 @@ public class DwdMdCodeDictApp {
         //2.5 设置状态后端
         env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName)));
 
+        //消费主题
+        String topic = "ods_biz_house_info";
         // kafka消费者
-        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,"ods_md_code_dict",sourceName+env);
+        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,topic,sourceName+env);
         // 输入流
-        DataStream<String> edits = env.addSource(consumer).name("ods_md_code_dict");
+        DataStream<String> edits = env.addSource(consumer).name(topic);
+        // 3 打印数据
+        String isPrint = parameterTool.get("isPrint", "n");
+        if ("y".equals(isPrint.toLowerCase())) edits.print();
         // 过滤清洗
-        SingleOutputStreamOperator<SkuClass> calStream =
+        SingleOutputStreamOperator<WhStockKeyInfo> houseInfoStream =
                 edits
-                        .filter(x -> {
-                            JSONObject jsonObject = JSONObject.parseObject(x);
-                            // 操作名称
-                            String op = jsonObject.getString("op");
-                            // 获取数据
-                            JSONObject data = jsonObject.getJSONObject("after");
-                            if ("delete".equals(op)){
-                                data =  jsonObject.getJSONObject("before");
-                            }
-                            String type_code = data.getString("type_code");
-                            String enabled = data.getString("enabled");
-                            return "1".equals(enabled) && "ITEM_CLASS_CODE".equals(type_code);
-                        })
                         .map(x -> {
                             JSONObject jsonObject = JSONObject.parseObject(x);
                             // 数据库名
@@ -112,31 +95,51 @@ public class DwdMdCodeDictApp {
                             if ("delete".equals(op)){
                                 data =  jsonObject.getJSONObject("before");
                             }
-                            SkuClass skuClass = JSON.parseObject(data.toJSONString(), SkuClass.class);
-                            String wms_wh_code = data.getString("warehouse_code");
-                            String class_code = data.getString("code_value");
-                            String class_name = data.getString("code_name");
-                            String create_time = data.getString("created_dtm_loc");
-                            String update_time = data.getString("updated_dtm_loc");
-
-                            skuClass.setID(data.getLong(primaryKey));
-                            skuClass.setWH_CODE(DbEnum.getWhCodeEnumByDb(db));
-                            skuClass.setWMS_WH_CODE(wms_wh_code);
-                            skuClass.setCLASS_CODE(class_code);
-                            skuClass.setCLASS_NAME(class_name);
-                            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>create_time:"+create_time+":"+data.getLong(primaryKey));
-                            skuClass.setCREATE_TIME(DateTimeUtil.toDate(create_time));
-                            skuClass.setUPDATE_TIME(DateTimeUtil.toDate(update_time));
-                            return skuClass;
+                            WhStockKeyInfo whStockKeyInfo = JSON.parseObject(data.toJSONString(), WhStockKeyInfo.class);
+                            String siteCode = data.getString("SITE_CODE");
+                            String houseCode = data.getString("HOUSE_CODE");
+                            String houseName = data.getString("HOUSE_NAME");
+                            String temperateZone = data.getString("TEMPERATE_ZONE");
+                            String temperature = data.getString("TEMPERATURE");
+                            String createTime = data.getString("CREATE_TIME");
+                            String updateTime = data.getString("UPDATE_TIME");
+                            whStockKeyInfo.setID(data.getLong(primaryKey));
+                            whStockKeyInfo.setWH_CODE(siteCode);
+                            whStockKeyInfo.setWH_AREA_CODE(houseCode);
+                            whStockKeyInfo.setWH_AREA_NAME(houseName);
+                            whStockKeyInfo.setTEMPERATURE_ZONE(temperateZone);
+                            whStockKeyInfo.setAREA_TEMPERATURE_INFO(temperature);
+                            whStockKeyInfo.setCREATE_TIME(DateTimeUtil.toDate(createTime));
+                            whStockKeyInfo.setUPDATE_TIME(DateTimeUtil.toDate(updateTime));
+                            return whStockKeyInfo;
                         })
                         ;
+        SingleOutputStreamOperator<WhStockKeyInfo> houseInfoStream2 = AsyncDataStream.unorderedWait(houseInfoStream,
+                new DimAsyncFunction2<WhStockKeyInfo>("DIM_WAREHOUSE_CODE_MAPPING",
+                        "SITE_CODE,WAREHOUSE_CODE,SITE_COS_NAME") {
+                    public String getKey(WhStockKeyInfo input) {return null;}
+                    public void join(WhStockKeyInfo input, JSONObject dimInfo) throws Exception {}
 
+                    @Override
+                    public List<Tuple2<String, String>> getCondition(WhStockKeyInfo input) {
+                        List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
+                        mdSkuTuples.add(new Tuple2<>("SITE_CODE",input.getWH_CODE()));
+                        return mdSkuTuples;
+                    }
 
-        // 3 打印数据
-        String isPrint = parameterTool.get("isPrint", "n");
-        if ("y".equals(isPrint.toLowerCase())) calStream.print();
+                    @Override
+                    public void join(WhStockKeyInfo input, List<JSONObject> dimInfo) throws Exception {
+                        if (CollectionUtil.isNullOrEmpty(dimInfo)) return;
+                        JSONObject jsonObject = dimInfo.get(0);
+                        String warehouse_code = jsonObject.getString("warehouse_code");
+                        String site_cos_name = jsonObject.getString("site_cos_name");
+                        input.setWMS_WH_CODE(warehouse_code);
+                        input.setWH_NAME(site_cos_name);
+                    }
+                }, 60, TimeUnit.SECONDS);
+
         // sink到数据库
-        calStream.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(SkuClass.class))).name("md_code_dict_sqlserver");
+        houseInfoStream2.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(WhStockKeyInfo.class))).name("biz_house_info_sqlserver");
 
         env.execute(sourceName);
     }
