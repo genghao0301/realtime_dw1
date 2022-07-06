@@ -30,8 +30,6 @@ public class CDCMySqlToHbase11 {
 
     public static void main(String[] args) throws Exception {
 
-        System.setProperty("HADOOP_USER_NAME","root");
-
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // 初始化配置信息
         String config_env = parameterTool.get("env", "dev");

@@ -16,7 +16,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -100,7 +99,7 @@ public class DimHbaseSink extends RichSinkFunction<JSONObject> {
                 // 增加表字段
                 createTable(jsonObject);
                 // 重新插入数据
-                Thread.sleep(100 * new Random(9).nextInt());
+                //Thread.sleep(100 * new Random(9).nextInt());
                 invoke(jsonObject, context);
             } catch (Exception e2) {
                 e2.printStackTrace();
@@ -112,7 +111,7 @@ public class DimHbaseSink extends RichSinkFunction<JSONObject> {
                 // 增加表字段
                 addTableColumn(jsonObject,e);
                 // 重新插入数据
-                Thread.sleep(100 * new Random(9).nextInt());
+                //Thread.sleep(100 * new Random(9).nextInt());
                 // 重新插入数据
                 invoke(jsonObject, context);
             } catch (Exception e2) {

@@ -42,7 +42,6 @@ public class CdcSqlserverDmp {
 
         String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
         String sourceName = classNames[classNames.length -1];
-        System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // 初始化配置信息
@@ -57,7 +56,7 @@ public class CdcSqlserverDmp {
         if (StringUtils.isNotBlank(parameterTool.get("tableList")))
             tableList = parameterTool.get("tableList").split(",");
         //并行度
-        Integer parallelism = parameterTool.getInt("parallelism",3);
+        Integer parallelism = parameterTool.getInt("parallelism",1);
         StartupOptions startupOptions = StartupOptions.initial();
         if (StringUtils.isNotBlank(parameterTool.get("startupOptions"))) {
             String startupOptionsStr = parameterTool.get("startupOptions");

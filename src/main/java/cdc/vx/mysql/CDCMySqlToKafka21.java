@@ -43,7 +43,6 @@ public class CDCMySqlToKafka21 {
 
         String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
         String sourceName = classNames[classNames.length -1];
-        System.setProperty("HADOOP_USER_NAME","root");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // ***************************初始化配置信息***************************

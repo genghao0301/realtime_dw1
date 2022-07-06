@@ -49,7 +49,6 @@ public class DwdMdCodeDictApp {
 
         String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
         String sourceName = classNames[classNames.length -1];
-        System.setProperty("HADOOP_USER_NAME","root");
 
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);

@@ -30,8 +30,6 @@ public class CdcSqlserverDmp2 {
 
     public static void main(String[] args) throws Exception {
 
-        System.setProperty("HADOOP_USER_NAME","root");
-
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // 初始化配置信息
         String config_env = parameterTool.get("env", "dev");
@@ -91,8 +89,6 @@ public class CdcSqlserverDmp2 {
         // MemoryStateBackend（内存状态后端）
         // FsStateBackend（文件系统状态后端 hdfs）
         // RocksDBStateBackend（RocksDB状态后端）
-        //2.6 设置访问HDFS的用户名
-        //System.setProperty("HADOOP_USER_NAME", "root");
 
         //env.addSource(sourceFunction).addSink(new ClickHouseSink()).setParallelism(1);
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);

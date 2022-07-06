@@ -44,8 +44,6 @@ public class DwdInbAsnApp {
 
     public static void main(String[] args) throws Exception {
 
-        System.setProperty("HADOOP_USER_NAME","root");
-
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         //并行度
