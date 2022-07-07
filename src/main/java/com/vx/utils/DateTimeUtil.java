@@ -36,9 +36,19 @@ public class DateTimeUtil {
         LocalDateTime localDateTime = LocalDateTime.parse(YmDHms, utc_formator);
         return localDateTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();
     }
+    /**
+     * 将字符串转日期成Long类型的时间戳，格式为：yyyy-MM-dd HH:mm:ss
+     */
+    public static Long convertTimeToLong(String time) {
+//        Assert.notNull(time, "time is null");
+        DateTimeFormatter ftf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime parse = LocalDateTime.parse("2021-05-29 13:52:50", ftf);
+        return LocalDateTime.from(parse).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
 
     public static void main(String[] args) {
-        System.out.println(toDate("2021-06-02 18:42:38"));
+
+        System.out.println(convertTimeToLong("2021-06-02 18:42:38"));
     }
 
 }
