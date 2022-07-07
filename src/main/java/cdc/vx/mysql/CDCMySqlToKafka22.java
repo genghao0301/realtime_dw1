@@ -114,7 +114,7 @@ public class CDCMySqlToKafka22 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-kafka")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName + "-" + config_env)));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase, WatermarkStrategy.noWatermarks(), sourceName);
         dataStreamSource.name(sourceName);
@@ -124,38 +124,38 @@ public class CDCMySqlToKafka22 {
         if ("y".equals(isPrint.toLowerCase())) dataStreamSource.print();
         // 数据分流
         // 创建分流标记
-//        OutputTag<String> kafkaTag = new OutputTag<String>("kafka-tag"){};
-//        OutputTag<String> hbaseTag = new OutputTag<String>("hbase-tag"){};
-//        //分流处理
-//        SingleOutputStreamOperator<String> processStream = dataStreamSource.process(new ProcessFunction<String, String>() {
-//            @Override
-//            public void processElement(String value, ProcessFunction<String, String>.Context ctx, Collector<String> out) throws Exception {
-//                JSONObject jsonObject = JSON.parseObject(value);
-//                if (CdcConstant.WMS_DIM_TABLES.contains(jsonObject.getString("table"))) {
-//                    ctx.output(hbaseTag, value);
-//                } else {
-//                    ctx.output(kafkaTag, value);
-//                }
-//            }
-//        });
-//        // 输出
-//        DataStream<String> kafkaStream = processStream.getSideOutput(kafkaTag);
-//        DataStream<String> hbaseStream = processStream.getSideOutput(hbaseTag);
-//
-//        // 输出到kafka
-//        String sinkTopic = "ods_default";
-//        Properties outprop= new Properties();
-//        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
-//        outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
-//        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
-//                sinkTopic,
-//                new MyKafkaSerializationSchema("ods"),
-//                outprop,
-//                Semantic.AT_LEAST_ONCE); // 容错
-//        kafkaStream.addSink(myProducer).name("Kafka_Sink_kafka");
-//        hbaseStream.addSink(myProducer).name("Hbase_Sink_kafka");
-//        // 输出到hbase
-//        hbaseStream.map(JSONObject::parseObject).addSink(new DimHbaseSink(config_env)).name("Wms_Sink_Hbase");
+        OutputTag<String> kafkaTag = new OutputTag<String>("kafka-tag"){};
+        OutputTag<String> hbaseTag = new OutputTag<String>("hbase-tag"){};
+        //分流处理
+        SingleOutputStreamOperator<String> processStream = dataStreamSource.process(new ProcessFunction<String, String>() {
+            @Override
+            public void processElement(String value, ProcessFunction<String, String>.Context ctx, Collector<String> out) throws Exception {
+                JSONObject jsonObject = JSON.parseObject(value);
+                if (CdcConstant.WMS_DIM_TABLES.contains(jsonObject.getString("table"))) {
+                    ctx.output(hbaseTag, value);
+                } else {
+                    ctx.output(kafkaTag, value);
+                }
+            }
+        });
+        // 输出
+        DataStream<String> kafkaStream = processStream.getSideOutput(kafkaTag);
+        DataStream<String> hbaseStream = processStream.getSideOutput(hbaseTag);
+
+        // 输出到kafka
+        String sinkTopic = "ods_default";
+        Properties outprop= new Properties();
+        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
+        outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
+        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
+                sinkTopic,
+                new MyKafkaSerializationSchema("ods"),
+                outprop,
+                Semantic.AT_LEAST_ONCE); // 容错
+        kafkaStream.addSink(myProducer).name("Kafka_Sink_kafka");
+        hbaseStream.addSink(myProducer).name("Hbase_Sink_kafka");
+        // 输出到hbase
+        hbaseStream.map(JSONObject::parseObject).addSink(new DimHbaseSink(config_env)).name("Wms_Sink_Hbase");
         // 4 启动任务
         env.execute();
 
