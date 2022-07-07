@@ -11,8 +11,7 @@ import java.math.BigDecimal;
  */
 @Data
 public class InbAsnHeader extends BaseBean implements Serializable {
-    //annotate class 'inbasnheader' as @EqualsAndHashCode
-    //lombok annotations edit inspection profile setting
+    private String eventTimeDay;
     private long inb_asn_header_id;
     private long inb_po_header_id;
     private String asn_code;

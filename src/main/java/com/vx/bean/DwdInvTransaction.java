@@ -36,5 +36,17 @@ public class DwdInvTransaction extends InvTransaction {
      * 包装规格编码
      */
     private String pack_code;
+    /**
+     * 库区所属的库房
+     */
+    private  String room_code;
+    /**
+     * 货品类别编码
+     */
+    private String item_class_code;
+    /**
+     * DMP园区名称
+     */
+    private String wh_code;
 
 }

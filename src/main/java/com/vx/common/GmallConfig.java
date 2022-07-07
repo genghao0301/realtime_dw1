@@ -23,7 +23,7 @@ public class GmallConfig {
     }
 
     // kafka服务器信息
-    public static String KAFKA_SERVER = null;
+    public static String KAFKA_SERVER = "shucang001:9092,shucang002:9092,shucang003:9092";
     // kafka服务器信息
     public static String FLINK_WM4_STATE_BACKEND = null;
 
@@ -32,7 +32,7 @@ public class GmallConfig {
     //Phoenix驱动
     public static String PHOENIX_DRIVER = "org.apache.phoenix.jdbc.PhoenixDriver";
     //Phoenix连接参数
-    public static String PHOENIX_SERVER = null;
+    public static String PHOENIX_SERVER = "jdbc:phoenix:shucang001,shucang002,shucang003:2181:/hbase"   ;
 
     //ClickHouse驱动
     public static String CLICKHOUSE_DRIVER = "ru.yandex.clickhouse.ClickHouseDriver";
