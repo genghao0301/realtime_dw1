@@ -37,6 +37,7 @@ public abstract class DimAsyncFunction2<T> extends RichAsyncFunction<T, T> imple
     public DimAsyncFunction2(String tableName, String columnNames, String env) {
         this.tableName = tableName;
         this.columnNames = columnNames;
+        this.env = env;
     }
 
     @Override

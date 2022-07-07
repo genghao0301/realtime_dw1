@@ -25,7 +25,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
  * @Author: xiehp
  * @Date: 2022/5/24 16:18
  */
-public class DwsMdCodeDictApp {
+public class DwsSkuClassApp {
 
     public static void main(String[] args) throws Exception {
 
