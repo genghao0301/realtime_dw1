@@ -110,6 +110,7 @@ public class DimUtil {
             String key = tableName.toUpperCase();
             if (StringUtils.isNotBlank(id))
                 key = key + ":" + id;
+            else key = key + ":*" ;
             Jedis jedis = RedisUtil.getJedis();
             // 通过key清除缓存
             jedis.del(key);
