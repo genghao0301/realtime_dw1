@@ -46,6 +46,10 @@ public class DwdInbAsnApp {
 
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        // ***************************初始化配置信息***************************
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
         String eventTimeCheck = parameterTool.get("eventTimeCheck");
@@ -113,7 +117,7 @@ public class DwdInbAsnApp {
 
         SingleOutputStreamOperator<DwdInvTransaction> calStream2 = AsyncDataStream.unorderedWait(calStream,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_SKU",
-                        "WAREHOUSE_CODE,CLIENT_CODE,SKU_CODE,PACK_CODE") {
+                        "WAREHOUSE_CODE,CLIENT_CODE,SKU_CODE,PACK_CODE",config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
@@ -134,8 +138,10 @@ public class DwdInbAsnApp {
                 }, 60, TimeUnit.SECONDS);
 
         SingleOutputStreamOperator<String> calStream3 = AsyncDataStream.unorderedWait(calStream2,
-                new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_PACKAGE_DETAIL",
-                        "WAREHOUSE_CODE,PACKAGE_CODE,RATIO,UOM") {
+                new DimAsyncFunction2<DwdInvTransaction>(
+                        "DIM_MD_PACKAGE_DETAIL",
+                        "WAREHOUSE_CODE,PACKAGE_CODE,RATIO,UOM"
+                        ,config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         if (StringUtils.isBlank(input.getPack_code())) return null;

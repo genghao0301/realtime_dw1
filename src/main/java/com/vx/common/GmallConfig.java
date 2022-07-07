@@ -94,8 +94,9 @@ public class GmallConfig {
 
     // 初始化配置信息
     public void init(String env) throws IOException {
+        System.out.println("=========================================初始化环境入参：" + env);
         if (StringUtils.isBlank(env) || !envs.contains(env)) env = "dev";
-
+        System.out.println("=========================================初始化环境为2：" + env);
         try {
             System.out.println("=========================================属性初始化开始。。。。。。。。。。。。。。");
             InputStream in = this.getClass().getResourceAsStream("/application-" + env + ".properties");

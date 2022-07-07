@@ -28,11 +28,13 @@ public abstract class DimAsyncFunction2<T> extends RichAsyncFunction<T, T> imple
     private String tableName;
     //声明属性 字段名
     private String columnNames;
+    //声明属性 环境变量
+    private String env;
 
     public DimAsyncFunction2(String tableName) {
         this.tableName = tableName;
     }
-    public DimAsyncFunction2(String tableName, String columnNames) {
+    public DimAsyncFunction2(String tableName, String columnNames, String env) {
         this.tableName = tableName;
         this.columnNames = columnNames;
     }

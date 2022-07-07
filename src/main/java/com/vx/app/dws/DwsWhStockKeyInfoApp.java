@@ -115,7 +115,7 @@ public class DwsWhStockKeyInfoApp {
                         ;
         SingleOutputStreamOperator<WhStockKeyInfo> houseInfoStream2 = AsyncDataStream.unorderedWait(houseInfoStream,
                 new DimAsyncFunction2<WhStockKeyInfo>("DIM_WAREHOUSE_CODE_MAPPING",
-                        "SITE_CODE,WAREHOUSE_CODE,SITE_COS_NAME") {
+                        "SITE_CODE,WAREHOUSE_CODE,SITE_COS_NAME",config_env) {
                     public String getKey(WhStockKeyInfo input) {return null;}
                     public void join(WhStockKeyInfo input, JSONObject dimInfo) throws Exception {}
 
