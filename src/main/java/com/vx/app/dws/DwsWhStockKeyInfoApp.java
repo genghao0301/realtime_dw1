@@ -46,6 +46,7 @@ public class DwsWhStockKeyInfoApp {
         // ***************************初始化配置信息***************************
         String config_env = parameterTool.get("env", "dev");
         GmallConfig.getSingleton().init(config_env);
+        System.out.println("==============================PHOENIX_SERVER:" + GmallConfig.PHOENIX_SERVER);
         // ***************************初始化配置信息***************************
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
