@@ -25,6 +25,7 @@ public class CdcConstant {
             ,"md_package_detail"
             ,"md_location"
             ,"md_code_dict"
+            ,"inb_asn_header"
     );
 
 }
