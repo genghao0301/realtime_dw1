@@ -123,10 +123,6 @@ public class PgCustomerDeserialization implements DebeziumDeserializationSchema<
         //5.获取操作类型  CREATE UPDATE DELETE
         Envelope.Operation operation = Envelope.operationFor(sourceRecord);
         String type = operation.toString().toLowerCase();
-        if ("create".equals(type) || "read".equals(type)) {
-            type = "insert";
-        }
-
         //6.将字段写入JSON对象
         result.put("database", database);
         //result.put("schema", schema);

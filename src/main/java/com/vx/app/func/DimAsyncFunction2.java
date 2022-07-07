@@ -34,6 +34,10 @@ public abstract class DimAsyncFunction2<T> extends RichAsyncFunction<T, T> imple
     public DimAsyncFunction2(String tableName) {
         this.tableName = tableName;
     }
+    public DimAsyncFunction2(String tableName, String columnNames) {
+        this.tableName = tableName;
+        this.columnNames = columnNames;
+    }
     public DimAsyncFunction2(String tableName, String columnNames, String env) {
         this.tableName = tableName;
         this.columnNames = columnNames;

@@ -5,14 +5,17 @@ import com.vx.bean.TableName;
 import com.vx.bean.TransientSink;
 import com.vx.common.GmallConfig;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
+import scala.annotation.meta.field;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @version V1.0
@@ -127,13 +130,13 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
                 op = baseBean.getOp();
             }
             if (StringUtils.isBlank(op)) {
-                insert(obj);
+                insert(baseBean);
                 return;
             }
-            if ("read".equals(op) || "insert".equals(op))
-                insert(obj);
+            if ("read".equals(op) || "create".equals(op))
+                insert(baseBean);
             else if ("update".equals(op))
-                update(obj);
+                update(baseBean);
             else if ("delete".equals(op))
                 delete(baseBean);
         } catch (Exception e) {
@@ -146,7 +149,7 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
         }
     }
 
-    private void insert(T obj) {
+    private void insert(BaseBean obj) {
         PreparedStatement ps = null;
         try {
             Class<?> classz = obj.getClass();
@@ -204,10 +207,10 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
         }
     }
 
-    private void update(T obj) {
+    private void update(BaseBean baseBean) {
         PreparedStatement ps = null;
         try {
-            Class<?> classz = obj.getClass();
+            Class<?> classz = baseBean.getClass();
             //获取表名
             TableName tableName = classz.getAnnotation(TableName.class);
             //反射的方式获取所有的属性名
@@ -225,7 +228,16 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
                 if (i != fields.length - 1)
                     sql.append(" , ");
             }
-            sql.append(" where ").append(fields[0].getName()) .append(" = ? ");
+            // 设置where条件
+            sql.append(" where ");
+            List<Tuple2<String, Object>> whereSqls = baseBean.getWhereSqls();
+            // 如果没有where条件，直接返回
+            if (whereSqls == null) return;
+            for (int i=0; i<whereSqls.size(); i++) {
+                sql.append(whereSqls.get(i).f0).append(" =  ? ");
+                if (i != whereSqls.size() - 1)
+                    sql.append(" and ");
+            }
             //定义跳过的属性
             int offset = 0;
             ps = connection.prepareStatement(sql.toString());
@@ -241,11 +253,11 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
                 //设置可访问私有属性的值
                 field.setAccessible(true);
                 //给站位符赋值
-                ps.setObject(i + 1 - offset, field.get(obj));
+                ps.setObject(i + 1 - offset, field.get(baseBean));
             }
-            // 设置主键
-            fields[0].setAccessible(true);
-            ps.setObject(paramNum,fields[0].get(obj));
+            for (int i=0; i<whereSqls.size();i++) {
+                ps.setObject(paramNum + i + 1, whereSqls.get(i).f1);
+            }
             // 执行SQL
             int a = ps.executeUpdate();
         } catch (Exception e) {
@@ -269,11 +281,22 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
             TableName tableName = classz.getAnnotation(TableName.class);
             //反射的方式获取所有的属性名
             Field[] fields = classz.getDeclaredFields();
-            // 生成插入sql语句
-            String sql = "Delete from " + tableName + " Where "+ baseBean.getPrimaryKey() +" = ?";
-            // 执行删除操作
-            ps = connection.prepareStatement(sql);
-            ps.setObject(1, baseBean.getPrimaryKeyValue());
+            // 生成删除sql语句
+            StringBuffer sql = new StringBuffer(" Delete from " + tableName + " Where ");
+            List<Tuple2<String, Object>> whereSqls = baseBean.getWhereSqls();
+            // 如果没有where条件，直接返回
+            if (whereSqls == null) return;
+            for (int i=0; i<whereSqls.size(); i++) {
+                sql.append(whereSqls.get(i).f0).append(" = ? ");
+                if (i != whereSqls.size() - 1)
+                    sql.append(" and ");
+            }
+            ps = connection.prepareStatement(sql.toString());
+            // 给条件赋值
+            for (int i=1; i<=whereSqls.size(); i++) {
+                ps.setObject(i, whereSqls.get(i-1).f1);
+            }
+            // 提交删除操作
             ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();

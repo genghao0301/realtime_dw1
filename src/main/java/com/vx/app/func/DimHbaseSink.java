@@ -200,21 +200,6 @@ public class DimHbaseSink extends RichSinkFunction<JSONObject> {
                 i++;
             }
 
-//            String[] fields = sinkColumns.split(",");
-//            for (int i = 0; i < fields.length; i++) {
-//                String field = fields[i];
-//                //判断是否为主键
-//                if (sinkPk.equals(field)) {
-//                    createTableSQL.append(field).append(" varchar primary key ");
-//                } else {
-//                    createTableSQL.append(field).append(" varchar ");
-//                }
-//                //判断是否为最后一个字段,如果不是,则添加","
-//                if (i < fields.length - 1) {
-//                    createTableSQL.append(",");
-//                }
-//            }
-
             createTableSQL.append(")").append(sinkExtend);
 
             //打印建表语句

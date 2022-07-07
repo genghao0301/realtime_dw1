@@ -9,6 +9,7 @@ import com.vx.utils.DbEnum;
 import com.vx.utils.MyKafkaUtil;
 import com.vx.utils.SqlServerUtil;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -17,6 +18,9 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @version V1.0
@@ -100,6 +104,13 @@ public class DwsSkuClassApp {
                             skuClass.setOp(op);
                             skuClass.setPrimaryKey(primaryKey);
                             skuClass.setPrimaryKeyValue(String.valueOf(data.getLong(primaryKey)));
+                            // 当删除或者更新时，设置where条件字段，用于删除或者更新
+                            if ("delete".equals(op) || "update".equals(op)) {
+                                List<Tuple2<String, Object>> whereSqls = new ArrayList<>();
+                                whereSqls.add(new Tuple2<>("WH_CODE", DbEnum.getWhCodeEnumByDb(db)));
+                                whereSqls.add(new Tuple2<>("CLASS_CODE", data.getString("code_value")));
+                                skuClass.setWhereSqls(whereSqls);
+                            }
                             // 设置实体信息
                             skuClass.setID(data.getLong(primaryKey));
                             skuClass.setWH_CODE(DbEnum.getWhCodeEnumByDb(db));

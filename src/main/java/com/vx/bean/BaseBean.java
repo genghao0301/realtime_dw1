@@ -1,6 +1,9 @@
 package com.vx.bean;
 
 import lombok.Data;
+import org.apache.flink.api.java.tuple.Tuple2;
+
+import java.util.List;
 
 /**
  * @version V1.0
@@ -41,5 +44,8 @@ public class BaseBean {
      */
     @TransientSink
     private String op;
+
+    @TransientSink
+    List<Tuple2<String, Object>> whereSqls;
 
 }
