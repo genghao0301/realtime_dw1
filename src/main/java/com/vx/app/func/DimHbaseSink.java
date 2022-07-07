@@ -76,9 +76,6 @@ public class DimHbaseSink extends RichSinkFunction<JSONObject> {
             Set<String> keys = data.keySet();
             Collection<Object> values = data.values();
 
-//            //如果表不存在就创建
-//            checkTable(tableName, keys, primaryKey , null);
-
             //创建插入数据的SQL
             String upsertSql = genUpsertSql(tableName, keys, values);
             System.out.println(upsertSql);

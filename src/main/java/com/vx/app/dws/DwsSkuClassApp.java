@@ -94,24 +94,23 @@ public class DwsSkuClassApp {
                                 data =  jsonObject.getJSONObject("before");
                             }
                             SkuClass skuClass = JSON.parseObject(data.toJSONString(), SkuClass.class);
-                            String wms_wh_code = data.getString("warehouse_code");
-                            String class_code = data.getString("code_value");
-                            String class_name = data.getString("code_name");
-                            String create_time = data.getString("created_dtm_loc");
-                            String update_time = data.getString("updated_dtm_loc");
-
+                            // 设置共同属性
+                            skuClass.setDb(db);
+                            skuClass.setTable(table);
+                            skuClass.setOp(op);
+                            skuClass.setPrimaryKey(primaryKey);
+                            skuClass.setPrimaryKeyValue(String.valueOf(data.getLong(primaryKey)));
+                            // 设置实体信息
                             skuClass.setID(data.getLong(primaryKey));
                             skuClass.setWH_CODE(DbEnum.getWhCodeEnumByDb(db));
-                            skuClass.setWMS_WH_CODE(wms_wh_code);
-                            skuClass.setCLASS_CODE(class_code);
-                            skuClass.setCLASS_NAME(class_name);
-                            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>create_time:"+create_time+":"+data.getLong(primaryKey));
-                            skuClass.setCREATE_TIME(DateTimeUtil.toDate(create_time));
-                            skuClass.setUPDATE_TIME(DateTimeUtil.toDate(update_time));
+                            skuClass.setWMS_WH_CODE(data.getString("warehouse_code"));
+                            skuClass.setCLASS_CODE(data.getString("code_value"));
+                            skuClass.setCLASS_NAME(data.getString("code_name"));
+                            skuClass.setCREATE_TIME(DateTimeUtil.toDate(data.getString("created_dtm_loc")));
+                            skuClass.setUPDATE_TIME(DateTimeUtil.toDate(data.getString("updated_dtm_loc")));
                             return skuClass;
                         })
                         ;
-
 
         // 3 打印数据
         String isPrint = parameterTool.get("isPrint", "n");

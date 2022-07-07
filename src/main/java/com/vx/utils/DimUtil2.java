@@ -25,80 +25,74 @@ public class DimUtil2 {
 
     public static <T> List<T> getDimInfo(String tableName, Class<T> classz, String columnNames, Tuple2<String, String>... conditions) {
 
-        long start = System.currentTimeMillis();
-
-        try {
-            if (conditions.length <= 0) {
-                throw new RuntimeException("查询维度数据时,请至少设置一个查询条件！");
-            }
-            //创建Phoenix Where子句
-            StringBuilder whereSql = new StringBuilder(" where ");
-
-            //创建RedisKey
-            StringBuilder redisKey = new StringBuilder(tableName).append(":");
-
-            //遍历查询条件并赋值whereSql
-            for (int i = 0; i < conditions.length; i++) {
-                //获取单个查询条件
-                Tuple2<String, String> columnValue = conditions[i];
-
-                String column = columnValue.f0;
-                String value = columnValue.f1;
-                whereSql.append(column).append("='").append(value).append("'");
-
-                redisKey.append(value);
-
-                //判断如果不是最后一个条件,则添加"and"
-                if (i < conditions.length - 1) {
-                    whereSql.append(" and ");
-                    redisKey.append(":");
-                }
-            }
-
-            //获取Redis连接
-            Jedis jedis = RedisUtil.getJedis();
-            String dimJsonStr = jedis.get(redisKey.toString());
-            //判断是否从Redis中查询到数据
-            if (dimJsonStr != null && dimJsonStr.length() > 0) {
-                jedis.close();
-                return JSON.parseArray(dimJsonStr, classz);
-            }
-
-            StringBuilder querySql = new StringBuilder("select ");
-            //遍历查询字段
-            if (StringUtils.isNotBlank(columnNames)) {
-                querySql.append(columnNames);
-            } else {
-                querySql.append(" * ");
-            }
-
-
-            //拼接SQL
-            querySql = querySql.append(" from ").append(tableName).append(whereSql);
-            System.out.println(querySql);
-
-            //查询Phoenix中的维度数据
-            List<T> queryList = null;
-            // 重试3次
-            for (int i=0; i<3; i++) {
-                try {
-                    queryList = PhoenixUtil.queryList(querySql.toString(), classz);
-                    break;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            //将数据写入Redis
-            if (queryList != null && queryList.size() > 0) {
-                jedis.set(redisKey.toString(), JSON.toJSONString(queryList));
-                jedis.expire(redisKey.toString(), 24 * 60 * 60);
-                jedis.close();
-            }
-            //返回结果
-            return queryList;
-        } finally {
-            System.out.println("========================================================="+tableName+"维度查询时间为：" + (System.currentTimeMillis() - start));
+        if (conditions.length <= 0) {
+            throw new RuntimeException("查询维度数据时,请至少设置一个查询条件！");
         }
+        //创建Phoenix Where子句
+        StringBuilder whereSql = new StringBuilder(" where ");
+
+        //创建RedisKey
+        StringBuilder redisKey = new StringBuilder(tableName).append(":");
+
+        //遍历查询条件并赋值whereSql
+        for (int i = 0; i < conditions.length; i++) {
+            //获取单个查询条件
+            Tuple2<String, String> columnValue = conditions[i];
+
+            String column = columnValue.f0;
+            String value = columnValue.f1;
+            whereSql.append(column).append("='").append(value).append("'");
+
+            redisKey.append(value);
+
+            //判断如果不是最后一个条件,则添加"and"
+            if (i < conditions.length - 1) {
+                whereSql.append(" and ");
+                redisKey.append(":");
+            }
+        }
+
+        //获取Redis连接
+        Jedis jedis = RedisUtil.getJedis();
+        String dimJsonStr = jedis.get(redisKey.toString());
+        //判断是否从Redis中查询到数据
+        if (dimJsonStr != null && dimJsonStr.length() > 0) {
+            jedis.close();
+            return JSON.parseArray(dimJsonStr, classz);
+        }
+
+        StringBuilder querySql = new StringBuilder("select ");
+        //遍历查询字段
+        if (StringUtils.isNotBlank(columnNames)) {
+            querySql.append(columnNames);
+        } else {
+            querySql.append(" * ");
+        }
+
+
+        //拼接SQL
+        querySql = querySql.append(" from ").append(tableName).append(whereSql);
+        System.out.println(querySql);
+
+        //查询Phoenix中的维度数据
+        List<T> queryList = null;
+        // 重试3次
+        for (int i=0; i<3; i++) {
+            try {
+                queryList = PhoenixUtil.queryList(querySql.toString(), classz);
+                break;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        //将数据写入Redis
+        if (queryList != null && queryList.size() > 0) {
+            jedis.set(redisKey.toString(), JSON.toJSONString(queryList));
+            jedis.expire(redisKey.toString(), 24 * 60 * 60);
+            jedis.close();
+        }
+        //返回结果
+        return queryList;
     }
 
     public static <T> List<T> getDimInfo(String tableName, Class<T> classz, String columnNames, List<Tuple2<String, String>> columnValues) {
@@ -134,8 +128,6 @@ public class DimUtil2 {
     }
 
     public static <T> List<T> getDimInfoFromMySql(String tableName, Class<T> classz, Tuple2<String, String>... columnValues) {
-
-        long start = System.currentTimeMillis();
 
         if (columnValues.length <= 0) {
             throw new RuntimeException("查询维度数据时,请至少设置一个查询条件！");
@@ -195,7 +187,6 @@ public class DimUtil2 {
             jedis.expire(redisKey.toString(), 24 * 60 * 60);
             jedis.close();
         }
-        System.out.println("========================================================="+tableName+"维度查询时间为：" + (System.currentTimeMillis() - start));
         //返回结果
         return queryList;
     }

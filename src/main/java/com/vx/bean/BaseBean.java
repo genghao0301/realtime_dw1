@@ -25,10 +25,16 @@ public class BaseBean {
     private String table;
 
     /**
-     * 表名
+     * 主键名
      */
     @TransientSink
     private String primaryKey;
+
+    /**
+     * 主键值
+     */
+    @TransientSink
+    private String primaryKeyValue;
 
     /**
      * 操作

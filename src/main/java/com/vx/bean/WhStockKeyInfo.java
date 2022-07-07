@@ -11,7 +11,7 @@ import java.util.Date;
  */
 @TableName(value ="WH_STOCK_KEY_INFO")
 @Data
-public class WhStockKeyInfo implements Serializable {
+public class WhStockKeyInfo extends BaseBean {
     /**
      * 自增id
      */

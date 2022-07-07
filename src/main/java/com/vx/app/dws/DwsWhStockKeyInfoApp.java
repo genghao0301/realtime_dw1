@@ -3,13 +3,13 @@ package com.vx.app.dws;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.vx.app.func.DimAsyncFunction2;
-import com.vx.bean.SkuClass;
+import com.vx.app.func.SinkToSqlServer;
+import com.vx.bean.BaseBean;
 import com.vx.bean.WhStockKeyInfo;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
-import com.vx.utils.DbEnum;
 import com.vx.utils.MyKafkaUtil;
-import com.vx.utils.SqlServerUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -80,6 +80,25 @@ public class DwsWhStockKeyInfoApp {
         // 过滤清洗
         SingleOutputStreamOperator<WhStockKeyInfo> houseInfoStream =
                 edits
+                        .filter(x -> {
+                            JSONObject jsonObject = JSONObject.parseObject(x);
+                            // 数据库名
+                            String db = jsonObject.getString("db");
+                            // 表名
+                            String table = jsonObject.getString("table");
+                            // 操作名称
+                            String op = jsonObject.getString("op");
+                            // 主键字段名称
+                            String primaryKey = jsonObject.getString("primaryKey");
+                            // 获取数据
+                            JSONObject data = jsonObject.getJSONObject("after");
+                            if ("delete".equals(op)){
+                                data =  jsonObject.getJSONObject("before");
+                            }
+                            String recStatus = data.getString("REC_STATUS");
+                            // 过滤无效数据
+                            return  StringUtils.isNotBlank(recStatus) && "1".equals(recStatus);
+                        })
                         .map(x -> {
                             JSONObject jsonObject = JSONObject.parseObject(x);
                             // 数据库名
@@ -96,21 +115,20 @@ public class DwsWhStockKeyInfoApp {
                                 data =  jsonObject.getJSONObject("before");
                             }
                             WhStockKeyInfo whStockKeyInfo = JSON.parseObject(data.toJSONString(), WhStockKeyInfo.class);
-                            String siteCode = data.getString("SITE_CODE");
-                            String houseCode = data.getString("HOUSE_CODE");
-                            String houseName = data.getString("HOUSE_NAME");
-                            String temperateZone = data.getString("TEMPERATE_ZONE");
-                            String temperature = data.getString("TEMPERATURE");
-                            String createTime = data.getString("CREATE_TIME");
-                            String updateTime = data.getString("UPDATE_TIME");
+                            whStockKeyInfo.setDb(db);
+                            whStockKeyInfo.setTable(table);
+                            whStockKeyInfo.setOp(op);
+                            whStockKeyInfo.setPrimaryKey(primaryKey);
+                            whStockKeyInfo.setPrimaryKeyValue(String.valueOf(data.getLong(primaryKey)));
+                            // 获取数据并转换
                             whStockKeyInfo.setID(data.getLong(primaryKey));
-                            whStockKeyInfo.setWH_CODE(siteCode);
-                            whStockKeyInfo.setWH_AREA_CODE(houseCode);
-                            whStockKeyInfo.setWH_AREA_NAME(houseName);
-                            whStockKeyInfo.setTEMPERATURE_ZONE(temperateZone);
-                            whStockKeyInfo.setAREA_TEMPERATURE_INFO(temperature);
-                            whStockKeyInfo.setCREATE_TIME(DateTimeUtil.toDate(createTime));
-                            whStockKeyInfo.setUPDATE_TIME(DateTimeUtil.toDate(updateTime));
+                            whStockKeyInfo.setWH_CODE(data.getString("SITE_CODE"));
+                            whStockKeyInfo.setWH_AREA_CODE(data.getString("HOUSE_CODE"));
+                            whStockKeyInfo.setWH_AREA_NAME(data.getString("HOUSE_NAME"));
+                            whStockKeyInfo.setTEMPERATURE_ZONE(data.getString("TEMPERATE_ZONE"));
+                            whStockKeyInfo.setAREA_TEMPERATURE_INFO(data.getString("TEMPERATURE"));
+                            whStockKeyInfo.setCREATE_TIME(DateTimeUtil.toDate(data.getString("CREATE_TIME")));
+                            whStockKeyInfo.setUPDATE_TIME(DateTimeUtil.toDate(data.getString("UPDATE_TIME")));
                             return whStockKeyInfo;
                         })
                         ;
@@ -139,7 +157,8 @@ public class DwsWhStockKeyInfoApp {
                 }, 60, TimeUnit.SECONDS);
 
         // sink到数据库
-        houseInfoStream2.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(WhStockKeyInfo.class))).name("biz_house_info_sqlserver");
+        //houseInfoStream2.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(WhStockKeyInfo.class))).name("biz_house_info_sqlserver");
+        houseInfoStream2.addSink(new SinkToSqlServer(config_env)).name("biz_house_info_sqlserver");
 
         env.execute(sourceName);
     }

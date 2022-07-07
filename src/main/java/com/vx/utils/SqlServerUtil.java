@@ -205,7 +205,8 @@ public class SqlServerUtil {
                     }
                 },
                 JdbcExecutionOptions.builder()
-                        .withBatchSize(5)
+                        .withBatchSize(10)
+                        .withBatchIntervalMs(1000)
                         .build(),
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                         .withDriverName(GmallConfig.SQLSERVER_DRIVER)
@@ -214,5 +215,6 @@ public class SqlServerUtil {
                         .withPassword(GmallConfig.SINK_SQLSERVER_PASSWORD)
                         .build());
     }
+
 
 }
