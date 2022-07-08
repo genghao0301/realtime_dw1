@@ -66,7 +66,7 @@ public class DwsWhStockKeyInfoApp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName)));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName+"-"+config_env)));
 
         //消费主题
         String topic = "ods_biz_house_info";

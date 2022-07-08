@@ -33,7 +33,7 @@ public class CDCMySqlToKafka23 {
     public static void main(String[] args) throws Exception {
 
         String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
-        String className = classNames[classNames.length -1];
+        String sourceName = classNames[classNames.length -1];
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // 初始化配置信息
@@ -113,7 +113,7 @@ public class CDCMySqlToKafka23 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-kafka")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName + "-" + config_env)));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
                 WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());

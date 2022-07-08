@@ -30,6 +30,9 @@ public class CdcSqlserverDmp2 {
 
     public static void main(String[] args) throws Exception {
 
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
+        String sourceName = classNames[classNames.length -1];
+
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         // 初始化配置信息
         String config_env = parameterTool.get("env", "dev");
@@ -85,7 +88,7 @@ public class CdcSqlserverDmp2 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 2000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName+"-"+config_env)));
         // MemoryStateBackend（内存状态后端）
         // FsStateBackend（文件系统状态后端 hdfs）
         // RocksDBStateBackend（RocksDB状态后端）

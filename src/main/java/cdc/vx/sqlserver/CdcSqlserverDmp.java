@@ -100,7 +100,7 @@ public class CdcSqlserverDmp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(1, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dmp-kafka")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName+"-"+config_env)));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);
         dataStreamSource.name(sourceName);
