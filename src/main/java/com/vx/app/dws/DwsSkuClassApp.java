@@ -2,6 +2,7 @@ package com.vx.app.dws;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.vx.app.func.SinkToSqlServer;
 import com.vx.bean.SkuClass;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
@@ -127,7 +128,8 @@ public class DwsSkuClassApp {
         String isPrint = parameterTool.get("isPrint", "n");
         if ("y".equals(isPrint.toLowerCase())) calStream.print();
         // sink到数据库
-        calStream.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(SkuClass.class))).name("md_code_dict_sqlserver");
+        //calStream.addSink(SqlServerUtil.getSink(SqlServerUtil.genInsertSql(SkuClass.class))).name("md_code_dict_sqlserver");
+        calStream.addSink(new SinkToSqlServer(config_env)).name("md_code_dict_sqlserver");
 
         env.execute(sourceName);
     }
