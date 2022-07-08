@@ -105,7 +105,7 @@ public class CDCMySqlToHbase12 {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"wms4-hbase")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName + "-" +config_env)));
 
         DataStreamSource<String> dataStreamSource = env.fromSource(sourceDatabase,
                 WatermarkStrategy.noWatermarks(), Thread.currentThread().getStackTrace()[1].getClassName());

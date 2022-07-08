@@ -25,6 +25,16 @@ public class PostgresCDC {
 
     public static void main(String[] args) throws Exception {
 
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
+        String sourceName = classNames[classNames.length -1];
+
+        //获取执行参数
+        ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        // ***************************初始化配置信息***************************
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
+
         Properties debeziumProperties = new Properties();
 //        debeziumProperties.setProperty("snapshot.locking.mode", "none");// do not use lock
 //        debeziumProperties.setProperty("scan.incremental.snapshot.enabled", "false");// do not use incremental snapshot
@@ -69,7 +79,7 @@ public class PostgresCDC {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 20000L));
         //2.5 设置状态后端
-        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"pg-kafka-test")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName + "-" +config_env)));
 
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction,
                         "postgres-source")
