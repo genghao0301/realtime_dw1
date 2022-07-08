@@ -2,28 +2,41 @@ package com.vx.app.dwd;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.vx.app.func.DimAsyncFunction2;
+import com.vx.app.schema.DwdKafkaSerializationSchema;
+import com.vx.bean.DwdInbAsnContainer;
+import com.vx.bean.DwdInvTransaction;
 import com.vx.bean.InbAsnContainer;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
 import com.vx.utils.MyKafkaUtil;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.datastream.AsyncDataStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.util.CollectionUtil;
+import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @version V1.0
- * @ClassName: DwdInbAsnApp4
+ * @ClassName: DwdInbAsnApp3
  * @Description: TODO
  * @Author: cgengh01
- * @Date: 2022/7/6 10:24
+ * @Date: 2022/7/8 9:24
  */
 public class DwdInbAsnApp4 {
 
@@ -31,8 +44,12 @@ public class DwdInbAsnApp4 {
 
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        // ***************************初始化配置信息***************************
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
         //并行度
-        Integer parallelism = parameterTool.getInt("parallelism",3);
+        Integer parallelism = parameterTool.getInt("parallelism", 3);
         String eventTimeCheck = parameterTool.get("eventTimeCheck");
         // 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -53,12 +70,12 @@ public class DwdInbAsnApp4 {
 //        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dwd-inb")));
 
         // kafka消费者
-        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,"ods_inb_asn_container",Thread.currentThread().getStackTrace()[1].getClassName());
+        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER, "ods_inb_asn_container", Thread.currentThread().getStackTrace()[1].getClassName());
         // 输入流
         DataStream<String> edits = env.addSource(consumer).name("ods_inb_asn_container");
 //        edits.print();
         // 过滤清洗
-        SingleOutputStreamOperator<InbAsnContainer> calStream =
+        SingleOutputStreamOperator<DwdInbAsnContainer> calStream =
                 edits
                         .map(x -> {
 
@@ -73,34 +90,73 @@ public class DwdInbAsnApp4 {
                             String primaryKey = jsonObject.getString("primaryKey");
                             // 获取数据
                             JSONObject data = jsonObject.getJSONObject("after");
-                            if ("delete".equals(op)){
-                                data =  jsonObject.getJSONObject("before");
+                            if ("delete".equals(op)) {
+                                data = jsonObject.getJSONObject("before");
                             }
                             //构建实例
-                            InbAsnContainer inbAsnContainer = JSON.parseObject(data.toJSONString(), InbAsnContainer.class);
-                            inbAsnContainer.setDb(db);
-                            inbAsnContainer.setTable(table);
-                            inbAsnContainer.setOp(op);
-                            inbAsnContainer.setPrimaryKey(primaryKey);
+                            DwdInbAsnContainer dwdInbAsnContainer = JSON.parseObject(data.toJSONString(), DwdInbAsnContainer.class);
+                            dwdInbAsnContainer.setDb(db);
+                            dwdInbAsnContainer.setTable(table);
+                            dwdInbAsnContainer.setOp(op);
+                            dwdInbAsnContainer.setPrimaryKey(primaryKey);
                             // 事件时间
-                            String eventTime = inbAsnContainer.getUpdated_dtm_loc();
+                            String eventTime = dwdInbAsnContainer.getCreated_dtm_loc();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                             // 事件日期
                             String eventTimeDay = sdf.format(new Date(DateTimeUtil.toTs(eventTime)));
-                            inbAsnContainer.setEventTimeDay(eventTimeDay);
-                            return inbAsnContainer;
-                        });
+                            dwdInbAsnContainer.setEventTimeDay(eventTimeDay);
+                            return dwdInbAsnContainer;
+                        })
+//                        .filter(data ->{
+//                            String inv_adjustment_type = data.getInv_adjustment_type();
+//                            String action_type = data.getAction_type();
+//                            return ("A".equals(inv_adjustment_type) && "200".equals(action_type)) || ("S".equals(inv_adjustment_type)&& "200".equals(action_type));
+//                        })
+                ;
 //        calStream.print();
-//        String sinkTopic = "ods_default";
-//        Properties outprop = new Properties();
-//        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,GmallConfig.KAFKA_SERVER);
-//        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
-//                sinkTopic,
-//                new DwdKafkaSerializationSchema("dwd"),
-//                outprop,
-//                FlinkKafkaProducer.Semantic.AT_LEAST_ONCE); // 容错
-        // sink到kafka对应主题
-//        calStream4.map(JSON::toJSONString).addSink(myProducer);
+        //添加维度 到货温度字段
+        SingleOutputStreamOperator<DwdInbAsnContainer> calStream2 = AsyncDataStream.unorderedWait(calStream,
+                new DimAsyncFunction2<DwdInbAsnContainer>("DIM_INB_ASN_HEADER",
+                        "arrival_temperature", config_env) {
+                    @Override
+                    public List<Tuple2<String, String>> getCondition(DwdInbAsnContainer input) {
+                        List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
+                        //
+//                        mdSkuTuples.add(new Tuple2<>("warehouse_code", input.getWarehouse_code()));
+                        mdSkuTuples.add(new Tuple2<>("asn_code", input.getAsn_code()));
+                        return mdSkuTuples;
+                    }
+
+                    public void join(DwdInbAsnContainer input, List<JSONObject> dimInfo) throws Exception {
+//                        if (CollectionUtil.isNullOrEmpty(dimInfo)) return;
+                        if (CollectionUtil.isNullOrEmpty(dimInfo)) {
+                            input.setArrival_temperature("未登记温度");
+                            return;
+                        }
+                        //目前采购单头表温度记录都是空,所以以下不会被执行到
+                        JSONObject jsonObject = dimInfo.get(0);
+                        String arrival_temperature = jsonObject.getString("arrival_temperature");
+                        input.setArrival_temperature(arrival_temperature);
+                    }
+                    @Override
+                    public String getKey(DwdInbAsnContainer input) {
+                        return null;
+                    }
+
+                    public void join(DwdInbAsnContainer input, JSONObject dimInfo) throws Exception {
+                    }
+                }, 30, TimeUnit.SECONDS);
+//            calStream2.print("关联温度后>>>>>");
+        String sinkTopic = "ods_default";
+        Properties outprop = new Properties();
+        outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, GmallConfig.KAFKA_SERVER);
+        FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
+                sinkTopic,
+                new DwdKafkaSerializationSchema("dwd"),
+                outprop,
+                FlinkKafkaProducer.Semantic.AT_LEAST_ONCE); // 容错
+        //sink到数据库
+        calStream2.map(JSON::toJSONString).addSink(myProducer);
 
         env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
     }

@@ -65,16 +65,17 @@ public class DwdInbAsnApp2 {
         env.setParallelism(parallelism);
         // 设置事件时间
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
         //设置周期生成Watermark间隔(10毫秒）
         env.getConfig().setAutoWatermarkInterval(10L);
         // 设置检查点
         env.enableCheckpointing(15000L);
         //2.2 指定CK的一致性语义
-        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+//        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
         //2.3 设置任务关闭的时候保留最后一次CK数据
-        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+//        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
         //2.4 指定从CK自动重启策略
-        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
+//        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
 //        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dwd-inb")));
 
@@ -94,7 +95,7 @@ public class DwdInbAsnApp2 {
                     @Override
                     public long extractTimestamp(InbAsnContainer element, long recordTimestamp) {
 
-                        return DateTimeUtil.toTs(element.getUpdated_dtm_loc());
+                        return DateTimeUtil.toTs(element.getCreated_dtm_loc());
                     }
                 });
         //设置方法准备水位线 泛型就是你想要生产水位线的数据
@@ -103,7 +104,7 @@ public class DwdInbAsnApp2 {
                 .withTimestampAssigner(new SerializableTimestampAssigner<InbAsnHeader>() {
                     @Override
                     public long extractTimestamp(InbAsnHeader element, long recordTimestamp) {
-                        return DateTimeUtil.toTs(element.getUpdated_dtm_loc());
+                        return DateTimeUtil.toTs(element.getCreated_dtm_loc());
                     }
                 });
         //双流join
@@ -186,14 +187,15 @@ public class DwdInbAsnApp2 {
 //                        );
 //                    }
 //                });
-//        inbAsnHeaderStringKeyedStream.print("采购单头>>>>>>>>>>>>>>>>");
+//        inbAsnHeaderStringKeyedStream.print("采购单头>>>>>>>>>>>>>>>>");inbAsnHeaderStringKeyedStream
         //设定时间进行join
-        SingleOutputStreamOperator<DwdWideInbAsnContainer> processDS = inbAsnContainerStringKeyedStream.intervalJoin(inbAsnHeaderStringKeyedStream)
+        //采购单头表中存在入库单号是收货单表中没有的
+        SingleOutputStreamOperator<DwdWideInbAsnContainer> processDS = inbAsnHeaderStringKeyedStream.intervalJoin(inbAsnContainerStringKeyedStream)
                 .between(Time.days(-360),Time.days(360))
-                .process(new ProcessJoinFunction<InbAsnContainer, InbAsnHeader, DwdWideInbAsnContainer>() {
+                .process(new ProcessJoinFunction<InbAsnHeader, InbAsnContainer, DwdWideInbAsnContainer>() {
                     @Override
-                    public void processElement(InbAsnContainer inbAsnContainer, InbAsnHeader inbAsnHeader, Context context, Collector<DwdWideInbAsnContainer> collector) throws Exception {
-                        collector.collect(new DwdWideInbAsnContainer(inbAsnContainer, inbAsnHeader));
+                    public void processElement(InbAsnHeader inbAsnHeader, InbAsnContainer inbAsnContainer, Context context, Collector<DwdWideInbAsnContainer> collector) throws Exception {
+                        collector.collect(new DwdWideInbAsnContainer(inbAsnHeader, inbAsnContainer));
                     }
                 });
 //        processDS.print("join>>>>>>>");

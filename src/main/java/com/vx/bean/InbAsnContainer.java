@@ -608,5 +608,4 @@ public class InbAsnContainer extends BaseBean implements Serializable {
      * 记录版本
      */
     private Long record_version;
-
 }

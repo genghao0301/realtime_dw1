@@ -609,7 +609,7 @@ public class DwdWideInbAsnContainer extends BaseBean{
       */
      String arrival_temperature;
 
-    public DwdWideInbAsnContainer(InbAsnContainer inbAsnContainer, InbAsnHeader inbAsnHeader) {
+    public DwdWideInbAsnContainer(InbAsnHeader inbAsnHeader,InbAsnContainer inbAsnContainer) {
         mergeInbAsnContainer(inbAsnContainer);
         mergeInbAsnHeader(inbAsnHeader);
     }

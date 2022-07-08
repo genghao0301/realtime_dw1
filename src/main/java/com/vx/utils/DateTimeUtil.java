@@ -29,6 +29,10 @@ public class DateTimeUtil {
 
     public static Long toTs(String YmDHms) {
         LocalDateTime localDateTime = LocalDateTime.parse(YmDHms, formator);
+        return localDateTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();
+    }
+    public static Long toTs2(String YmDHms) {
+        LocalDateTime localDateTime = LocalDateTime.parse(YmDHms, formator);
         return localDateTime.toInstant(ZoneOffset.of("+8")).toEpochMilli()/1000;
     }
 
@@ -39,7 +43,7 @@ public class DateTimeUtil {
 
     public static void main(String[] args) {
 
-        System.out.println(toTs("2021-06-25 18:42:39"));
+        System.out.println(toTs("2021-08-10 17:40:40"));
     }
 
 }

@@ -42,9 +42,13 @@ public class DwdInbAsnApp3 {
 
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        // ***************************初始化配置信息***************************
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
-        String eventTimeCheck = parameterTool.get("eventTimeCheck");
+//        String eventTimeCheck = parameterTool.get("eventTimeCheck");
         // 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
@@ -72,7 +76,6 @@ public class DwdInbAsnApp3 {
         SingleOutputStreamOperator<DwdInvTransaction> calStream =
                 edits
                         .map(x -> {
-
                             JSONObject jsonObject = JSONObject.parseObject(x);
                             // 数据库名
                             String db = jsonObject.getString("db");
@@ -94,7 +97,7 @@ public class DwdInbAsnApp3 {
                             dwdInvTransaction.setOp(op);
                             dwdInvTransaction.setPrimaryKey(primaryKey);
                             // 事件时间
-                            String eventTime = dwdInvTransaction.getUpdated_dtm_loc();
+                            String eventTime = dwdInvTransaction.getCreated_dtm_loc();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                             // 事件日期
                             String eventTimeDay = sdf.format(new Date(DateTimeUtil.toTs(eventTime)));
@@ -104,18 +107,18 @@ public class DwdInbAsnApp3 {
                         .filter(data ->{
                             String inv_adjustment_type = data.getInv_adjustment_type();
                             String action_type = data.getAction_type();
-                            return ("A".equals(inv_adjustment_type) && "200".equals(action_type))|| ("S".equals(inv_adjustment_type)&& "200".equals(action_type));
+                            return ("A".equals(inv_adjustment_type) && "200".equals(action_type)) || ("S".equals(inv_adjustment_type) && "200".equals(action_type));
                         })
                 ;
 //        calStream.print();
         //查询库位所在库区名称
         SingleOutputStreamOperator<DwdInvTransaction> calStream2 = AsyncDataStream.unorderedWait(calStream,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_LOCATION",
-                        "ROOM_CODE") {
+                        "ROOM_CODE",config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
-                        mdSkuTuples.add(new Tuple2<>("location_name",input.getLocation_code()));
+                        mdSkuTuples.add(new Tuple2<>("location_code",input.getLocation_code()));
                         return mdSkuTuples;
                     }
                     public void join(DwdInvTransaction input, List<JSONObject> dimInfo) throws Exception {
@@ -124,16 +127,15 @@ public class DwdInbAsnApp3 {
                         String room_code = jsonObject.getString("room_code");
                         input.setRoom_code(room_code);
                     }
-                    //?
                     @Override
                     public String getKey(DwdInvTransaction input) {return null;}
                     public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {}
                 }, 60, TimeUnit.SECONDS);
-//        calStream2.print();
+        calStream2.print();
         //添加sku维度字段
         SingleOutputStreamOperator<DwdInvTransaction> calStream3 = AsyncDataStream.unorderedWait(calStream2,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_SKU",
-                        "ITEM_CLASS_CODE") {
+                        "ITEM_CLASS_CODE",config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
@@ -147,7 +149,6 @@ public class DwdInbAsnApp3 {
                         String item_class_code = jsonObject.getString("item_class_code");
                         input.setItem_class_code(item_class_code);
                     }
-                    //?
                     @Override
                     public String getKey(DwdInvTransaction input) {return null;}
                     public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {}
@@ -156,11 +157,11 @@ public class DwdInbAsnApp3 {
         //添加DMP园区名称添加进来
         SingleOutputStreamOperator<DwdInvTransaction> calStream4 = AsyncDataStream.unorderedWait(calStream3,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_WAREHOUSE_CODE_MAPPING",
-                        "SITE_CODE") {
+                        "SITE_CODE", config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
-                        mdSkuTuples.add(new Tuple2<>("warehouse_code",input.getWarehouse_code()));
+                        mdSkuTuples.add(new Tuple2<>("warehouse_code", input.getWarehouse_code()));
                         return mdSkuTuples;
                     }
                     public void join(DwdInvTransaction input, List<JSONObject> dimInfo) throws Exception {
@@ -170,10 +171,13 @@ public class DwdInbAsnApp3 {
                         input.setWh_code(wh_code);
                     }
                     @Override
-                    public String getKey(DwdInvTransaction input) {return null;}
-                    public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {}
+                    public String getKey(DwdInvTransaction input) {
+                        return null;
+                    }
+                    public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {
+                    }
                 }, 60, TimeUnit.SECONDS);
-//        calStream4.print();
+//        calStream4.print("关联维度后数据>>>>>>>");
         String sinkTopic = "ods_default";
         Properties outprop = new Properties();
         outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,GmallConfig.KAFKA_SERVER);
