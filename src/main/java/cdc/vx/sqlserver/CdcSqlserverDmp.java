@@ -40,7 +40,7 @@ public class CdcSqlserverDmp {
 
     public static void main(String[] args) throws Exception {
 
-        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
         String sourceName = classNames[classNames.length -1];
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);

@@ -38,7 +38,7 @@ public class DwsWhStockKeyInfoApp {
 
     public static void main(String[] args) throws Exception {
 
-        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split(",");
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
         String sourceName = classNames[classNames.length -1];
 
         //获取执行参数
