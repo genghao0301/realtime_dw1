@@ -26,9 +26,6 @@ import java.util.List;
  */
 public class SinkToSqlServer<T> extends RichSinkFunction<T> {
 
-    private static PreparedStatement ps;
-    private static PreparedStatement selectps;
-    private static PreparedStatement updateps;
     private static Connection connection = null;
 
     private String url;
@@ -89,18 +86,6 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
         super.close();
         //关闭连接和释放资源
         try {
-            if (ps != null) {
-                System.out.println("关闭插入ps");
-                ps.close();
-            }
-            if (selectps != null) {
-                System.out.println("关闭查询ps");
-                selectps.close();
-            }
-            if (updateps != null) {
-                System.out.println("关闭更新ps");
-                updateps.close();
-            }
 //            if (connection != null && !connection.isClosed()) {
 //                System.out.println("关闭数据库连接");
 //                connection.close();

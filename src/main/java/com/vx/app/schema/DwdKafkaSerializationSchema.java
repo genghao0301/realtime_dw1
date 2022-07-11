@@ -47,30 +47,4 @@ public class DwdKafkaSerializationSchema implements KafkaSerializationSchema<Str
         return new ProducerRecord<>(topic,primaryKey.getBytes(), element.getBytes());
     }
 
-//    @Override
-//    public void open(SerializationSchema.InitializationContext context) throws Exception {
-//        KafkaSerializationSchema.super.open(context);
-//    }
-
-//    @Override
-//    public ProducerRecord<byte[], byte[]> serialize(T element, @Nullable Long timestamp) {
-//        return null;
-//    }
-
-//    public byte[] objectToByte(T obj) {
-//        byte[] bytes = new byte[0];
-//        try {
-//            ByteArrayOutputStream bo = new ByteArrayOutputStream();
-//            ObjectOutputStream oo = new ObjectOutputStream(bo);
-//            oo.writeObject(obj);
-//            bytes = bo.toByteArray();
-//            bo.close();
-//            oo.close();
-//        }
-//        catch(Exception ae) {
-//            ae.printStackTrace();
-//        }
-//        return bytes;
-//    }
-
 }
