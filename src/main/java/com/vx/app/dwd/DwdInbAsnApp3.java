@@ -131,7 +131,7 @@ public class DwdInbAsnApp3 {
                     public String getKey(DwdInvTransaction input) {return null;}
                     public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {}
                 }, 60, TimeUnit.SECONDS);
-        calStream2.print();
+//        calStream2.print();
         //添加sku维度字段
         SingleOutputStreamOperator<DwdInvTransaction> calStream3 = AsyncDataStream.unorderedWait(calStream2,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_SKU",
@@ -177,7 +177,7 @@ public class DwdInbAsnApp3 {
                     public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {
                     }
                 }, 60, TimeUnit.SECONDS);
-//        calStream4.print("关联维度后数据>>>>>>>");
+        calStream4.print("关联维度后数据>>>>>>>");
         String sinkTopic = "ods_default";
         Properties outprop = new Properties();
         outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,GmallConfig.KAFKA_SERVER);

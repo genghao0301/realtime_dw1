@@ -128,11 +128,11 @@ public class DwdInbAsnApp4 {
                     }
 
                     public void join(DwdInbAsnContainer input, List<JSONObject> dimInfo) throws Exception {
-//                        if (CollectionUtil.isNullOrEmpty(dimInfo)) return;
-                        if (CollectionUtil.isNullOrEmpty(dimInfo)) {
-                            input.setArrival_temperature("未登记温度");
-                            return;
-                        }
+                        if (CollectionUtil.isNullOrEmpty(dimInfo)) return;
+//                        if (CollectionUtil.isNullOrEmpty(dimInfo)) {
+//                            input.setArrival_temperature("未登记温度");
+//                            return;
+//                        }
                         //目前采购单头表温度记录都是空,所以以下不会被执行到
                         JSONObject jsonObject = dimInfo.get(0);
                         String arrival_temperature = jsonObject.getString("arrival_temperature");
