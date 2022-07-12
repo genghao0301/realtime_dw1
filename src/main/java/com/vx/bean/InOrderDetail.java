@@ -12,11 +12,12 @@ import java.util.Date;
  */
 @TableName(value ="IN_ORDER_DETAIL")
 @Data
-public class InOrderDetail implements Serializable {
+public class InOrderDetail extends BaseBean implements Serializable {
     /**
      * 
      */
     //@TableId(value = "ID", type = IdType.AUTO)
+    @TransientSink
     private Long ID;
 
     /**

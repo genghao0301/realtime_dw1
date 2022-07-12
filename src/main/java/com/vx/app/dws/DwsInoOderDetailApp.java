@@ -86,7 +86,7 @@ public class DwsInoOderDetailApp {
             public DwdInbAsnContainer map(String s) throws Exception {
                 DwdInbAsnContainer dia = JSON.parseObject(s, DwdInbAsnContainer.class);
                 //判断
-                if (310 == dia.getStatus()){
+                if ("310".equals(dia.getStatus()) ){
                     dia.setInv_adjustment_type("A");
                 }else {
                     dia.setInv_adjustment_type("S");

@@ -99,6 +99,8 @@ public class DwdInbAsnApp4 {
                             dwdInbAsnContainer.setTable(table);
                             dwdInbAsnContainer.setOp(op);
                             dwdInbAsnContainer.setPrimaryKey(primaryKey);
+                            //温度
+                            dwdInbAsnContainer.setArrival_temperature("无");
                             // 事件时间
                             String eventTime = dwdInbAsnContainer.getCreated_dtm_loc();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -106,13 +108,7 @@ public class DwdInbAsnApp4 {
                             String eventTimeDay = sdf.format(new Date(DateTimeUtil.toTs(eventTime)));
                             dwdInbAsnContainer.setEventTimeDay(eventTimeDay);
                             return dwdInbAsnContainer;
-                        })
-//                        .filter(data ->{
-//                            String inv_adjustment_type = data.getInv_adjustment_type();
-//                            String action_type = data.getAction_type();
-//                            return ("A".equals(inv_adjustment_type) && "200".equals(action_type)) || ("S".equals(inv_adjustment_type)&& "200".equals(action_type));
-//                        })
-                ;
+                        });
 //        calStream.print();
         //添加维度 到货温度字段
         SingleOutputStreamOperator<DwdInbAsnContainer> calStream2 = AsyncDataStream.unorderedWait(calStream,
@@ -129,10 +125,6 @@ public class DwdInbAsnApp4 {
 
                     public void join(DwdInbAsnContainer input, List<JSONObject> dimInfo) throws Exception {
                         if (CollectionUtil.isNullOrEmpty(dimInfo)) return;
-//                        if (CollectionUtil.isNullOrEmpty(dimInfo)) {
-//                            input.setArrival_temperature("未登记温度");
-//                            return;
-//                        }
                         //目前采购单头表温度记录都是空,所以以下不会被执行到
                         JSONObject jsonObject = dimInfo.get(0);
                         String arrival_temperature = jsonObject.getString("arrival_temperature");

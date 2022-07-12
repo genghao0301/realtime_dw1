@@ -59,7 +59,7 @@ public class DwdWideInbAsnContainer extends BaseBean{
     /**
      * 收货箱状态
      */
-     Integer status;
+     String status;
     /**
      * 入库单明细表主键ID
      */

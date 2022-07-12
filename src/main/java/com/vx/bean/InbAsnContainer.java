@@ -63,7 +63,7 @@ public class InbAsnContainer extends BaseBean implements Serializable {
     /**
      * 收货箱状态
      */
-    private Integer status;
+    private String status;
     /**
      * 入库单明细表主键ID
      */

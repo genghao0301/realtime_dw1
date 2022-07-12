@@ -48,5 +48,23 @@ public class DwdInvTransaction extends InvTransaction {
      * DMP园区名称
      */
     private String wh_code;
-
+    //以下测试
+    /**
+     * 入库单号
+     */
+    private String asn_code;
+    /**
+     * 入库明细行号
+     */
+    private String asn_line_no;
+    /**
+     * 收货箱状态
+     */
+    private String status;
+    //测似状态是否一致
+    private  String tmpStatus;
+    /**
+     * 到货温度（单位：°C）
+     */
+    private String arrival_temperature;
 }
