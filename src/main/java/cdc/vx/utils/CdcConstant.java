@@ -26,6 +26,7 @@ public class CdcConstant {
             ,"md_location"
             ,"md_code_dict"
             ,"inb_asn_header"
+            ,"inb_asn_container"
     );
 
 }
