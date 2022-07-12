@@ -16,8 +16,6 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-//import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DwsInoOderDetailApp2 {
@@ -57,15 +55,6 @@ public class DwsInoOderDetailApp2 {
         FlinkKafkaConsumer<String> invtConsumer = MyKafkaUtil.getKafkaSource("dwd_inv_transaction", Thread.currentThread().getStackTrace()[1].getClassName());
         SingleOutputStreamOperator<String> invtDS = env.addSource(invtConsumer).name("dwd_inv_transaction");
 
-//        SingleOutputStreamOperator<DwsInoOderDetail> mapDs = invtDS.map(new MapFunction<String, DwsInoOderDetail>() {
-//            @Override
-//            public DwsInoOderDetail map(String s) throws Exception {
-//                DwdInvTransaction dwdInvTransaction = JSON.parseObject(s, DwdInvTransaction.class);
-//                DwsInoOderDetail dwsInoOderDetail = new DwsInoOderDetail(dwdInvTransaction);
-//                dwsInoOderDetail.setEtl_time(df.format(new Date()));
-//                return dwsInoOderDetail;
-//            }
-//        });
         //转换成实体
         SingleOutputStreamOperator<InOrderDetail> map = invtDS.map(x -> {
             JSONObject jsonObject = JSONObject.parseObject(x);
@@ -108,9 +97,7 @@ public class DwsInoOderDetailApp2 {
         map.print("测试>>>>");
 
         //sink到数据库
-//        applyDS.map(JSON::toJSONString).addSink(myProducer);
         map.addSink(new SinkToSqlServer(config_env)).name("in_ooder_detail_app");
-
 
         //启动任务
         env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
