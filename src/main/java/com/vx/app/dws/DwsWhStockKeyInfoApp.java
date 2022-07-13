@@ -121,12 +121,10 @@ public class DwsWhStockKeyInfoApp {
                             whStockKeyInfo.setPrimaryKey(primaryKey);
                             whStockKeyInfo.setPrimaryKeyValue(String.valueOf(data.getLong(primaryKey)));
                             // 当删除或者更新时，设置where条件字段
-                            if ("delete".equals(op) || "update".equals(op)) {
-                                List<Tuple2<String, Object>> whereSqls = new ArrayList<>();
-                                whereSqls.add(new Tuple2<>("WH_CODE", data.getString("SITE_CODE")));
-                                whereSqls.add(new Tuple2<>("WH_AREA_CODE", data.getString("HOUSE_CODE")));
-                                whStockKeyInfo.setWhereSqls(whereSqls);
-                            }
+                            List<Tuple2<String, Object>> whereSqls = new ArrayList<>();
+                            whereSqls.add(new Tuple2<>("WH_CODE", data.getString("SITE_CODE")));
+                            whereSqls.add(new Tuple2<>("WH_AREA_CODE", data.getString("HOUSE_CODE")));
+                            whStockKeyInfo.setWhereSqls(whereSqls);
                             // 获取数据并转换
                             whStockKeyInfo.setID(data.getLong(primaryKey));
                             whStockKeyInfo.setWH_CODE(data.getString("SITE_CODE"));
