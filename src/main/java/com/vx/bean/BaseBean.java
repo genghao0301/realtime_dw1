@@ -48,4 +48,7 @@ public class BaseBean {
     @TransientSink
     List<Tuple2<String, Object>> whereSqls;
 
+    @TransientSink
+    private int invokeNum = 0;
+
 }

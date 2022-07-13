@@ -105,13 +105,11 @@ public class DwsSkuClassApp {
                             skuClass.setOp(op);
                             skuClass.setPrimaryKey(primaryKey);
                             skuClass.setPrimaryKeyValue(String.valueOf(data.getLong(primaryKey)));
-                            // 当删除或者更新时，设置where条件字段，用于删除或者更新
-                            if ("delete".equals(op) || "update".equals(op)) {
-                                List<Tuple2<String, Object>> whereSqls = new ArrayList<>();
-                                whereSqls.add(new Tuple2<>("WH_CODE", DbEnum.getWhCodeEnumByDb(db)));
-                                whereSqls.add(new Tuple2<>("CLASS_CODE", data.getString("code_value")));
-                                skuClass.setWhereSqls(whereSqls);
-                            }
+                            // 当主键重复或者唯一主键重复时删除数据
+                            List<Tuple2<String, Object>> whereSqls = new ArrayList<>();
+                            whereSqls.add(new Tuple2<>("WH_CODE", DbEnum.getWhCodeEnumByDb(db)));
+                            whereSqls.add(new Tuple2<>("CLASS_CODE", data.getString("code_value")));
+                            skuClass.setWhereSqls(whereSqls);
                             // 设置实体信息
                             skuClass.setID(data.getLong(primaryKey));
                             skuClass.setWH_CODE(DbEnum.getWhCodeEnumByDb(db));

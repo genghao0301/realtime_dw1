@@ -1,5 +1,6 @@
 package com.vx.app.func;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.vx.bean.BaseBean;
 import com.vx.bean.TableName;
 import com.vx.bean.TransientSink;
@@ -137,6 +138,9 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
     private void insert(BaseBean obj) {
         PreparedStatement ps = null;
         try {
+            int invokeNum = obj.getInvokeNum();
+            if (invokeNum > 5) return;
+            obj.setInvokeNum(invokeNum+1);
             Class<?> classz = obj.getClass();
             //获取表名
             TableName tableName = classz.getAnnotation(TableName.class);
@@ -178,10 +182,22 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
                 ps.setObject(i + 1 - offset, field.get(obj));
             }
             int a = ps.executeUpdate();
-        } catch (Exception e) {
+        }
+        catch (SQLServerException e) {
+            System.err.println("invoke insert is error " + e.getMessage());
+            String message = e.getMessage();
+            if (message.toUpperCase().contains("VIOLATION OF UNIQUE KEY CONSTRAINT")) {
+                delete(obj);
+                insert(obj);
+                return;
+            }
             e.printStackTrace();
-            System.err.println("invoke is error " + e.getMessage());
-        } finally {
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("invoke insert is error " + e.getMessage());
+        }
+        finally {
             if (ps != null) {
                 try {
                     ps.close();
@@ -247,7 +263,7 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
             int a = ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("invoke is error " + e.getMessage());
+            System.err.println("invoke update is error " + e.getMessage());
         } finally {
             if (ps != null) {
                 try {
@@ -258,6 +274,7 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
             }
         }
     }
+
     private void delete(BaseBean baseBean) {
         PreparedStatement ps = null;
         try {
@@ -267,7 +284,7 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
             //反射的方式获取所有的属性名
             Field[] fields = classz.getDeclaredFields();
             // 生成删除sql语句
-            StringBuffer sql = new StringBuffer(" Delete from " + tableName + " Where ");
+            StringBuffer sql = new StringBuffer(" Delete from " + tableName.value() + " Where ");
             List<Tuple2<String, Object>> whereSqls = baseBean.getWhereSqls();
             // 如果没有where条件，直接返回
             if (whereSqls == null) return;
@@ -285,7 +302,7 @@ public class SinkToSqlServer<T> extends RichSinkFunction<T> {
             ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("invoke is error " + e.getMessage());
+            System.err.println("invoke delete is error " + e.getMessage());
         } finally {
             if (ps != null) {
                 try {
