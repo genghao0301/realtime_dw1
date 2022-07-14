@@ -20,7 +20,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class DwsInoOderDetailApp2 {
+public class DwsInoOderDetailApp {
     public static void main(String[] args) throws Exception {
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
@@ -54,8 +54,8 @@ public class DwsInoOderDetailApp2 {
         format.setParseBigDecimal(true);
 
         //构建收货表流
-        FlinkKafkaConsumer<String> invtConsumer = MyKafkaUtil.getKafkaSource("dwt_inv_transaction", Thread.currentThread().getStackTrace()[1].getClassName());
-        SingleOutputStreamOperator<String> invtDS = env.addSource(invtConsumer).name("dwt_inv_transaction");
+        FlinkKafkaConsumer<String> invtConsumer = MyKafkaUtil.getKafkaSource("dwd_inv_transaction", Thread.currentThread().getStackTrace()[1].getClassName());
+        SingleOutputStreamOperator<String> invtDS = env.addSource(invtConsumer).name("dwd_inv_transaction");
 
         //转换成实体
         SingleOutputStreamOperator<InOrderDetail> map = invtDS.map(x -> {
@@ -104,7 +104,7 @@ public class DwsInoOderDetailApp2 {
         map.print("测试>>>>");
 
         //sink到数据库
-        map.addSink(new SinkToSqlServer(config_env)).name("in_ooder_detail_app2").setParallelism(1);
+        map.addSink(new SinkToSqlServer(config_env)).name("in_ooder_detail_app");
 
         //启动任务
         env.execute(Thread.currentThread().getStackTrace()[1].getClassName());

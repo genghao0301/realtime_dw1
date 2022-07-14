@@ -8,14 +8,12 @@ import com.vx.bean.DwdInvTransaction;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
 import com.vx.utils.MyKafkaUtil;
-import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.AsyncDataStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
@@ -36,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * @Author: cgengh01
  * @Date: 2022/7/12 9:24
  */
-public class DwdInvTransactionApp {
+public class DwdInvTransactionApp2 {
 
     public static void main(String[] args) throws Exception {
 
@@ -97,12 +95,12 @@ public class DwdInvTransactionApp {
                             dwdInvTransaction.setOp(op);
                             dwdInvTransaction.setPrimaryKey(primaryKey);
 //                            //判断类型
-//                            if ("A".equals(dwdInvTransaction.getInv_adjustment_type())){
-//                                dwdInvTransaction.setTmpStatus("310");
-//                            }
-//                            if ("S".equals(dwdInvTransaction.getInv_adjustment_type())){
-//                                dwdInvTransaction.setTmpStatus("999");
-//                            }
+                            if ("A".equals(dwdInvTransaction.getInv_adjustment_type())){
+                                dwdInvTransaction.setStatus("310");
+                            }
+                            if ("S".equals(dwdInvTransaction.getInv_adjustment_type())){
+                                dwdInvTransaction.setStatus("999");
+                            }
                             // 事件时间
                             String eventTime = dwdInvTransaction.getCreated_dtm_loc();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -115,9 +113,11 @@ public class DwdInvTransactionApp {
                             String inv_adjustment_type = data.getInv_adjustment_type();
                             String action_type = data.getAction_type();
 //                            return ("A".equals(inv_adjustment_type) && "200".equals(action_type)) || ("S".equals(inv_adjustment_type) && "200".equals(action_type));
-                            return ("A".equals(inv_adjustment_type) || "S".equals(inv_adjustment_type)) && "200".equals(action_type);
+//                            return ("A".equals(inv_adjustment_type) || "S".equals(inv_adjustment_type)) && "200".equals(action_type);
+                            return  "200".equals(action_type) && ("A".equals(inv_adjustment_type) || "S".equals(inv_adjustment_type)) ;
                         });
-        //查询库位所在库区名称
+//        calStream.print("测试>>>>>");
+//        查询库位所在库区名称
         SingleOutputStreamOperator<DwdInvTransaction> calStream3 = AsyncDataStream.unorderedWait(calStream,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_MD_LOCATION",
                         "ROOM_CODE",config_env) {
@@ -184,17 +184,18 @@ public class DwdInvTransactionApp {
                     }
                 }, 60, TimeUnit.SECONDS);
         //关联收货表 获取维度入库单号  入库明细行号  收货箱状态  需要加个判断  A 是310 S是999
-        //后面要把仓库编码加入 区分园区  warehouse_code
+        //后面要把仓库编码加入 区分园区  WAREHOUSE_CODE
         SingleOutputStreamOperator<DwdInvTransaction> calStream2 = AsyncDataStream.unorderedWait(calStream5,
                 new DimAsyncFunction2<DwdInvTransaction>("DIM_INB_ASN_CONTAINER",
-                        "ASN_CODE,ASN_LINE_NO,STATUS",config_env) {
+                        "ASN_CODE,ASN_LINE_NO",config_env) {
                     @Override
                     public List<Tuple2<String, String>> getCondition(DwdInvTransaction input) {
                         List<Tuple2<String, String>> mdSkuTuples = new ArrayList<>();
+                        mdSkuTuples.add(new Tuple2<>("warehouse_code",input.getWarehouse_code()));
                         mdSkuTuples.add(new Tuple2<>("client_code",input.getClient_code()));
                         mdSkuTuples.add(new Tuple2<>("pallet_code",input.getLpn_no()));
                         mdSkuTuples.add(new Tuple2<>("sku_code",input.getItem_code()));
-//                        mdSkuTuples.add(new Tuple2<>("warehouse_code",input.getWarehouse_code()));
+//                        mdSkuTuples.add(new Tuple2<>("status",input.getStatus()));
                         return mdSkuTuples;
                     }
                     public void join(DwdInvTransaction input, List<JSONObject> dimInfo) throws Exception {
@@ -210,12 +211,15 @@ public class DwdInvTransactionApp {
                     @Override
                     public String getKey(DwdInvTransaction input) {return null;}
                     public void join(DwdInvTransaction input, JSONObject dimInfo) throws Exception {}
-                }, 200, TimeUnit.SECONDS);
+                }, 300, TimeUnit.SECONDS);
+        //测试
+//        calStream2.print("ceshi>>>");
         //过滤
+        SingleOutputStreamOperator<DwdInvTransaction> filterStreaam = calStream2.filter(s -> StringUtils.isNotBlank(s.getAsn_code()));
 //        SingleOutputStreamOperator<DwdInvTransaction> filterStreaam = calStream2.filter(s -> s.getTmpStatus().equals(s.getStatus()));
-        SingleOutputStreamOperator<DwdInvTransaction> filterStreaam = calStream2.filter(s ->
-                ("310".equals(s.getStatus())&&"A".equals(s.getInv_adjustment_type())) || ("999".equals(s.getStatus())&&"S".equals(s.getInv_adjustment_type()))
-        );
+//        SingleOutputStreamOperator<DwdInvTransaction> filterStreaam = calStream2.filter(s ->
+//                ("310".equals(s.getStatus())&&"A".equals(s.getInv_adjustment_type())) || ("999".equals(s.getStatus())&&"S".equals(s.getInv_adjustment_type()))
+//        );
 
         //执行时间赋值
         filterStreaam.print("关联维度后数据>>>>>>>");
@@ -224,7 +228,7 @@ public class DwdInvTransactionApp {
         outprop.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,GmallConfig.KAFKA_SERVER);
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
                 sinkTopic,
-                new DwdKafkaSerializationSchema("dwd"),
+                new DwdKafkaSerializationSchema("dwt"),
                 outprop,
                 FlinkKafkaProducer.Semantic.AT_LEAST_ONCE); // 容错
          //sink到数据库

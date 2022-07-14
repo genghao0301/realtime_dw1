@@ -62,7 +62,7 @@ public class DwdInvTransaction extends InvTransaction {
      */
     private String status;
     //测似状态是否一致
-    private  String tmpStatus;
+//    private  String tmpStatus;
     /**
      * 到货温度（单位：°C）
      */
