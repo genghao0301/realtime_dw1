@@ -86,9 +86,14 @@ public class DimUtil2 {
             }
         }
         //将数据写入Redis
-        if (queryList != null && queryList.size() > 0) {
-            jedis.set(redisKey.toString(), JSON.toJSONString(queryList));
-            jedis.expire(redisKey.toString(), 24 * 60 * 60);
+        try {
+            if (queryList != null && queryList.size() > 0) {
+                jedis.set(redisKey.toString(), JSON.toJSONString(queryList));
+                jedis.expire(redisKey.toString(), 24 * 60 * 60);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
             jedis.close();
         }
         //返回结果

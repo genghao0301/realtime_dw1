@@ -1,6 +1,10 @@
 package com.vx.utils;
 
 import cdc.vx.bean.DimMdClient;
+import cdc.vx.bean.DimMdLocation;
+import cdc.vx.bean.DimMdSku;
+import com.google.gson.JsonObject;
+import com.vx.bean.DwdInvTransaction;
 import com.vx.common.GmallConfig;
 import org.apache.commons.beanutils.BeanUtils;
 
@@ -91,7 +95,14 @@ public class PhoenixUtil {
 
     public static void main(String[] args) throws Exception {
 
-        System.out.println(queryList("select * from DIM_MD_CLIENT", DimMdClient.class));
+//        System.out.println(queryList("select * from DIM_MD_CLIENT", DimMdClient.class));
+//        System.out.println(queryList("select ROOM_CODE from DIM_MD_LOCATION where location_code='EC015-12'", DimMdLocation.class));
+//        System.out.println(queryList("SELECT ARRIVAL_TEMPERATURE FROM  DIM_INB_ASN_HEADER  WHERE WAREHOUSE_CODE = 'SHZ_WT' AND ASN_CODE ='ASNWT20210902000002'", JsonObject.class));
+//        System.out.println(queryList("select ITEM_CLASS_CODE from DIM_MD_SKU where client_code='SZ00001' and sku_code='4217971'", DimMdSku.class));
+//        System.out.println(queryList("select ITEM_CLASS_CODE from DIM_MD_SKU where client_code='SZ00001' and sku_code='4217971'", DimMdSku.class));
+//        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4791546' and status='999' and pallet_code='2021081100041'", DwdInvTransaction.class));
+        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4769215' and status='999' and pallet_code='2021081900078'", DwdInvTransaction.class));
+//        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4791546' and status='310' and pallet_code='2021081100041'", DwdInvTransaction.class));
 
     }
 }

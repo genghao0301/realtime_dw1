@@ -16,7 +16,7 @@ public class RedisUtil {
                     JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
                     jedisPoolConfig.setMaxTotal(1000); //最大可用连接数
                     jedisPoolConfig.setBlockWhenExhausted(true); //连接耗尽是否等待
-                    jedisPoolConfig.setMaxWaitMillis(2000); //等待时间
+                    jedisPoolConfig.setMaxWaitMillis(10000); //等待时间
                     jedisPoolConfig.setMaxIdle(5); //最大闲置连接数
                     jedisPoolConfig.setMinIdle(5); //最小闲置连接数
                     jedisPoolConfig.setTestOnBorrow(true); //取连接的时候进行一下测试 ping pong
