@@ -70,7 +70,7 @@ public class DimUtil {
         // 重试3次
         for (int i=0; i<3; i++) {
             try {
-                queryList = PhoenixUtil.queryList(querySql, classz);
+                queryList = PhoenixUtil.queryList(querySql, classz, tableName);
                 break;
             } catch (Exception e) {
                 e.printStackTrace();

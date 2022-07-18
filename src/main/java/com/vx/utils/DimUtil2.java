@@ -79,7 +79,7 @@ public class DimUtil2 {
         // 重试3次
         for (int i=0; i<3; i++) {
             try {
-                queryList = PhoenixUtil.queryList(querySql.toString(), classz);
+                queryList = PhoenixUtil.queryList(querySql.toString(), classz, tableName);
                 break;
             } catch (Exception e) {
                 e.printStackTrace();

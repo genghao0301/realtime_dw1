@@ -34,7 +34,7 @@ public class PhoenixUtil {
         }
     }
 
-    public static <T> List<T> queryList(String sql, Class<T> cls) throws Exception {
+    public static <T> List<T> queryList(String sql, Class<T> cls, String tableName) throws Exception {
         long start = System.currentTimeMillis();
         //初始化连接
         if (connection == null) {
@@ -89,20 +89,13 @@ public class PhoenixUtil {
                     e.printStackTrace();
                 }
             }
-            System.out.println("=========================================================hbase维度查询时间为：" + (System.currentTimeMillis() - start));
+            System.out.println("=========================================================" + tableName + ":hbase维度查询时间为：" + (System.currentTimeMillis() - start));
         }
     }
 
     public static void main(String[] args) throws Exception {
 
-//        System.out.println(queryList("select * from DIM_MD_CLIENT", DimMdClient.class));
-//        System.out.println(queryList("select ROOM_CODE from DIM_MD_LOCATION where location_code='EC015-12'", DimMdLocation.class));
-//        System.out.println(queryList("SELECT ARRIVAL_TEMPERATURE FROM  DIM_INB_ASN_HEADER  WHERE WAREHOUSE_CODE = 'SHZ_WT' AND ASN_CODE ='ASNWT20210902000002'", JsonObject.class));
-//        System.out.println(queryList("select ITEM_CLASS_CODE from DIM_MD_SKU where client_code='SZ00001' and sku_code='4217971'", DimMdSku.class));
-//        System.out.println(queryList("select ITEM_CLASS_CODE from DIM_MD_SKU where client_code='SZ00001' and sku_code='4217971'", DimMdSku.class));
-//        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4791546' and status='999' and pallet_code='2021081100041'", DwdInvTransaction.class));
-        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4769215' and status='999' and pallet_code='2021081900078'", DwdInvTransaction.class));
-//        System.out.println(queryList("select ASN_CODE,ASN_LINE_NO from DIM_INB_ASN_CONTAINER where warehouse_code='SHZ_WT' and client_code='SZ00001' and sku_code='4791546' and status='310' and pallet_code='2021081100041'", DwdInvTransaction.class));
+        System.out.println(queryList("select * from DIM_MD_CLIENT", DimMdClient.class, "DIM_MD_CLIENT"));
 
     }
 }
