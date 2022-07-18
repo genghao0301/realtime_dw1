@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.vx.app.func.InvTransactionCount;
 import com.vx.app.func.InvTransactionCount2;
 import com.vx.app.func.SinkToMySQL;
+import com.vx.app.func.SinkToSqlServer;
 import com.vx.bean.DwdInvTransaction;
 import com.vx.common.GmallConfig;
 import com.vx.utils.MyKafkaUtil;
@@ -31,11 +32,18 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 public class DwsInbAsnApp {
 
     public static void main(String[] args) throws Exception {
+
+        String[] classNames = Thread.currentThread().getStackTrace()[1].getClassName().split("\\.");
+        String sourceName = classNames[classNames.length -1];
+
         //获取执行参数
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        // ***************************初始化配置信息***************************
+        String config_env = parameterTool.get("env", "dev");
+        GmallConfig.getSingleton().init(config_env);
+        // ***************************初始化配置信息***************************
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
-        boolean isSavePoint = parameterTool.getBoolean("isSavePoint",true);
         // 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
@@ -52,13 +60,13 @@ public class DwsInbAsnApp {
         //2.4 指定从CK自动重启策略
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
-        if (isSavePoint)
-            env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dws-inb")));
+        env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName+"-"+config_env)));
 
+        String topic = "dwd_inv_transaction";
         // kafka消费者
-        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource("dwd_inv_transaction",Thread.currentThread().getStackTrace()[1].getClassName());
+        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(topic,Thread.currentThread().getStackTrace()[1].getClassName());
         // 输入流
-        DataStream<String> edits = env.addSource(consumer).name("dwd_inv_transaction");
+        DataStream<String> edits = env.addSource(consumer).name(topic);
         //edits.print();
         // 聚合计算
         DataStream<DwdInvTransaction> calStream =
@@ -104,6 +112,7 @@ public class DwsInbAsnApp {
         //calStream.map(JSON::toJSONString).print();
         // sink到数据库
         calStream.addSink(new SinkToMySQL(GmallConfig.SINK_MYSQL_URL, GmallConfig.SINK_MYSQL_USERNAME, GmallConfig.SINK_MYSQL_PASSWORD)).setParallelism(1);
+        calStream.addSink(new SinkToSqlServer(config_env)).name("inv_transaction_sqlserver");
 
         env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
     }
