@@ -51,7 +51,7 @@ public class DwdInvTransactionApp {
         GmallConfig.getSingleton().init(config_env);
         // ***************************初始化配置信息***************************
         //并行度
-        Integer parallelism = parameterTool.getInt("parallelism",6);
+        Integer parallelism = parameterTool.getInt("parallelism",3);
 //        String eventTimeCheck = parameterTool.get("eventTimeCheck");
         // 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

@@ -23,7 +23,7 @@ public class GmallConfig {
     }
 
     // kafka服务器信息
-    public static String KAFKA_SERVER = "shucang001:9092,shucang002:9092,shucang003:9092";
+    public static String KAFKA_SERVER = null;
     // kafka服务器信息
     public static String FLINK_WM4_STATE_BACKEND = null;
 
@@ -81,7 +81,7 @@ public class GmallConfig {
     public static String DMP_STATE_BACKEND = null;
     public static String DMP_HBASE_STATE_BACKEND = null;
     // MySQL目标数据库
-    public static String SINK_MYSQL_URL = null;
+    public static String SINK_MYSQL_URL = "jdbc:mysql://shucang003:50010/test?serverTimezone=GMT%2B8";
     public static String SINK_MYSQL_USERNAME = "root";
     public static String SINK_MYSQL_PASSWORD = "123456";
 
