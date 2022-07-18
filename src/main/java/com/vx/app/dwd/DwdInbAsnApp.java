@@ -196,7 +196,7 @@ public class DwdInbAsnApp {
         outprop.setProperty("transaction.timeout.ms", 60 * 5 * 1000 + "");
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<String>(
                 sinkTopic,
-                new DwdKafkaSerializationSchema("dwd"),
+                new DwdKafkaSerializationSchema("dwd1"),
                 outprop,
                 FlinkKafkaProducer.Semantic.AT_LEAST_ONCE); // 容错
         // sink到数据库

@@ -7,11 +7,14 @@ import com.vx.bean.InOrderDetail;
 import com.vx.common.GmallConfig;
 import com.vx.utils.DateTimeUtil;
 import com.vx.utils.MyKafkaUtil;
+import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 
@@ -41,11 +44,11 @@ public class DwsInoOderDetailApp {
         // 设置检查点
         env.enableCheckpointing(15000L);
         //2.2 指定CK的一致性语义
-//        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 //        //2.3 设置任务关闭的时候保留最后一次CK数据
-//        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 //        //2.4 指定从CK自动重启策略
-//        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
+        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 30000L));
         //2.5 设置状态后端
         if (isSavePoint)
             env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,"dws-inb")));
@@ -101,7 +104,7 @@ public class DwsInoOderDetailApp {
             inOrderDetail.setWhereSqls(whereSqls);
             return inOrderDetail;
         });
-        map.print("测试>>>>");
+//        map.print("测试>>>>");
 
         //sink到数据库
         map.addSink(new SinkToSqlServer(config_env)).name("in_ooder_detail_app");
