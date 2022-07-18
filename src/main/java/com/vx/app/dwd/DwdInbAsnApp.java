@@ -75,7 +75,7 @@ public class DwdInbAsnApp {
         env.setStateBackend(new FsStateBackend(String.format(GmallConfig.FS_STATE_BACKEND,sourceName + "-" +config_env)));
 
         // kafka消费者
-        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,"ods_inv_transaction",Thread.currentThread().getStackTrace()[1].getClassName());
+        FlinkKafkaConsumer<String> consumer = MyKafkaUtil.getKafkaSource(GmallConfig.KAFKA_SERVER,"ods_inv_transaction",sourceName + "-" +config_env);
         // 输入流
         DataStream<String> edits = env.addSource(consumer).name("ods_inv_transaction");
         //edits.print();
@@ -202,7 +202,7 @@ public class DwdInbAsnApp {
         // sink到数据库
         calStream3.addSink(myProducer);
 
-        env.execute(Thread.currentThread().getStackTrace()[1].getClassName());
+        env.execute(sourceName + "-" +config_env);
     }
 
 }
