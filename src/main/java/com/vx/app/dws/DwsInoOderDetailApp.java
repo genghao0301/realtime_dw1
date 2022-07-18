@@ -33,7 +33,7 @@ public class DwsInoOderDetailApp {
         // ***************************初始化配置信息***************************
         //并行度
         Integer parallelism = parameterTool.getInt("parallelism",3);
-        boolean isSavePoint = parameterTool.getBoolean("isSavePoint",false);
+        boolean isSavePoint = parameterTool.getBoolean("isSavePoint",true);
         // 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
