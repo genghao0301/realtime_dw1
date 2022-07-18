@@ -81,7 +81,7 @@ public class GmallConfig {
     public static String DMP_STATE_BACKEND = null;
     public static String DMP_HBASE_STATE_BACKEND = null;
     // MySQL目标数据库
-    public static String SINK_MYSQL_URL = "jdbc:mysql://shucang003:50010/test?serverTimezone=GMT%2B8";
+    public static String SINK_MYSQL_URL = null;
     public static String SINK_MYSQL_USERNAME = "root";
     public static String SINK_MYSQL_PASSWORD = "123456";
 
